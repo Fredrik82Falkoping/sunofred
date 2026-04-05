@@ -176,6 +176,44 @@ main {
     padding: 3rem 0;
 }
 
+.audio-section .section-intro {
+    max-width: 40rem;
+}
+
+.audio-box {
+    margin-top: 1.75rem;
+}
+
+.audio-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.spotify-player {
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.spotify-player iframe {
+    display: block;
+    width: 100%;
+}
+
+.spotify-player.compact iframe,
+.spotify-player.small iframe {
+    height: 80px;
+}
+
+.spotify-player .song-info {
+    padding: 28px;
+    color: #d1d1df;
+    min-height: 162px;
+}
+
 .section-intro {
     display: grid;
     gap: 1rem;
@@ -306,6 +344,22 @@ main {
 
     .about-grid {
         grid-template-columns: 1.5fr 1fr;
+    }
+}
+
+@media (max-width: 1024px) {
+    .audio-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .spotify-player .song-info {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .audio-row {
+        grid-template-columns: 1fr;
     }
 }
 
