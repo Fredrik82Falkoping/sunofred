@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Track | Sun of Red</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand">
+            <span class="eyebrow">Sun of Red</span>
+            <h1>Sun of Red</h1>
+            <p>Indie pop exploring reason, history and compassion.</p>
+        </div>
+        <nav class="site-nav">
+            <a href="../index.html">Home</a>
+            <a href="../index.html#music">Music</a>
+            <a href="../index.html#about">About</a>
+            <a href="../index.html#contact">Contact</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="section-intro">
+                <span>Admin</span>
+                <h2>Upload Track</h2>
+                <p>Add a new song to the preview section.</p>
+            </div>
+
+            <div class="upload-form-container">
+                <form id="trackForm">
+                    <div class="form-group">
+                        <label for="title">Track Title</label>
+                        <input type="text" name="title" id="title" placeholder="Enter song title" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea name="description" id="description" placeholder="Enter song description" rows="4" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="language">Language</label>
+                        <select name="language" id="language" required>
+                            <option value="">Select language...</option>
+                            <option value="en">English</option>
+                            <option value="sv">Swedish</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="categorySelect">Category</label>
+                        <div class="category-selector">
+                            <select name="category_id" id="categorySelect" required>
+                                <option value="">Select category...</option>
+                                <option value="__new__">+ Create new category</option>
+                            </select>
+                            <div id="newCategoryInput" class="new-category-input" style="display: none;">
+                                <input type="text" id="newCategoryName" placeholder="Enter new category name" />
+                                <button type="button" id="cancelNewCategory" class="button secondary small">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="spotify_url">Spotify URL (optional)</label>
+                        <input type="url" name="spotify_url" id="spotify_url" placeholder="https://open.spotify.com/track/..." />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mp3">MP3 File</label>
+                        <input type="file" name="mp3" id="mp3" accept="audio/mpeg" required />
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="license" id="license" />
+                            <span>Licensed track (check if you have proper licensing)</span>
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="button primary">Upload Track</button>
+                        <a href="../index.html" class="button">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>© 2026 Sun of Red • Independent artist project</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase.js"></script>
+</body>
+</html>
