@@ -31,12 +31,21 @@
                     Back to explore
                 </a>
                 <span>Category</span>
-                <h2 id="categoryName">Loading...</h2>
-                <p id="categoryDescription">All tracks in this category</p>
-                <div id="categoryImageContainer" style="margin-top: 20px; display: none;">
-                    <img id="categoryImage" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+                <div style="display: flex; gap: 24px; align-items: flex-start; width: 100%;">
+                    
+                    <div style="flex: 1;">
+                        <h2 id="categoryName">Loading...</h2>
+                        <p id="categoryDescription">All tracks in this category</p>
+                    </div>
+
+                    <div id="categoryImageContainer" style="display: none;">
+                        <img 
+                            id="categoryImage" 
+                            style="width: 200px; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" 
+                        />
+                    </div>
+
                 </div>
-            </div>
 
             <div id="tracksContainer" class="tracks-container">
                 <div class="loading">Loading tracks...</div>

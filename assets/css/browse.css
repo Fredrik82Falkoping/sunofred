@@ -119,10 +119,16 @@
 
 /* Tracks Container */
 .tracks-container {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 24px;
     margin-top: 32px;
+}
+
+@media (max-width: 1024px) {
+    .tracks-container {
+        grid-template-columns: 1fr;
+    }
 }
 
 .track-card {
