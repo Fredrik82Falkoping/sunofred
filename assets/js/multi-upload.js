@@ -155,7 +155,15 @@ document.getElementById('multiTrackForm')?.addEventListener('submit', async (e) 
             progressStatus.textContent = `Uploading track ${trackNumber} of ${totalTracks}: ${track.title}`;
             
             // 1. Upload file to Storage
-            const fileName = `${Date.now()}-${track.mp3File.name}`;
+            // Sanitize filename to handle special characters (åäö, apostrophes, etc.)
+            const sanitizedFileName = track.mp3File.name
+                .normalize('NFD') // Decompose accented characters
+                .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+                .replace(/[åä]/gi, 'a') // Replace å, ä with a
+                .replace(/ö/gi, 'o') // Replace ö with o
+                .replace(/[^a-zA-Z0-9.-]/g, '_'); // Replace other special chars with underscore
+            
+            const fileName = `${Date.now()}-${sanitizedFileName}`;
             
             const { error: uploadError } = await supabaseClient
                 .storage

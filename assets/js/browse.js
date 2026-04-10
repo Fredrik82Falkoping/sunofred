@@ -3,6 +3,8 @@
 // Load categories with track counts
 async function loadCategoriesWithCounts() {
     try {
+        const currentLang = window.languageFilter.getCurrentLanguage();
+        
         // Get all categories
         const { data: categories, error: catError } = await supabaseClient
             .from('categories')
@@ -12,23 +14,24 @@ async function loadCategoriesWithCounts() {
         if (catError) {
             console.error('Error loading categories:', catError);
             document.getElementById('categoriesGrid').innerHTML = 
-                '<p class="error">Kunde inte ladda kategorier</p>';
+                '<p class="error">Could not load categories</p>';
             return;
         }
 
         if (!categories || categories.length === 0) {
             document.getElementById('categoriesGrid').innerHTML = 
-                '<p class="no-results">Inga kategorier hittades</p>';
+                '<p class="no-results">No categories found</p>';
             return;
         }
 
-        // Get track counts for each category
+        // Get track counts for each category, filtered by language
         const categoriesWithCounts = await Promise.all(
             categories.map(async (category) => {
                 const { count, error } = await supabaseClient
                     .from('tracks')
                     .select('*', { count: 'exact', head: true })
-                    .eq('category_id', category.id);
+                    .eq('category_id', category.id)
+                    .eq('language', currentLang);
                 
                 return {
                     ...category,
@@ -41,7 +44,7 @@ async function loadCategoriesWithCounts() {
     } catch (err) {
         console.error('Error:', err);
         document.getElementById('categoriesGrid').innerHTML = 
-            '<p class="error">Ett fel uppstod</p>';
+            '<p class="error">An error occurred</p>';
     }
 }
 
@@ -53,7 +56,7 @@ function displayCategories(categories) {
     const categoriesWithTracks = categories.filter(cat => cat.trackCount > 0);
 
     if (categoriesWithTracks.length === 0) {
-        container.innerHTML = '<p class="no-results">Inga kategorier med låtar hittades</p>';
+        container.innerHTML = '<p class="no-results">No categories with tracks found</p>';
         return;
     }
 
@@ -68,7 +71,7 @@ function displayCategories(categories) {
                     </svg>
                 </div>
                 <h4 class="category-name">${category.name}</h4>
-                <p class="category-count">${trackCount} ${trackCount === 1 ? 'låt' : 'låtar'}</p>
+                <p class="category-count">${trackCount} ${trackCount === 1 ? 'track' : 'tracks'}</p>
             </a>
         `;
     }).join('');
@@ -79,6 +82,8 @@ function displayCategories(categories) {
 // Load tags with track counts
 async function loadTagsWithCounts() {
     try {
+        const currentLang = window.languageFilter.getCurrentLanguage();
+        
         // Get all tags
         const { data: tags, error: tagsError } = await supabaseClient
             .from('tags')
@@ -88,23 +93,39 @@ async function loadTagsWithCounts() {
         if (tagsError) {
             console.error('Error loading tags:', tagsError);
             document.getElementById('tagsCloud').innerHTML = 
-                '<p class="error">Kunde inte ladda taggar</p>';
+                '<p class="error">Could not load tags</p>';
             return;
         }
 
         if (!tags || tags.length === 0) {
             document.getElementById('tagsCloud').innerHTML = 
-                '<p class="no-results">Inga taggar hittades</p>';
+                '<p class="no-results">No tags found</p>';
             return;
         }
 
-        // Get track counts for each tag
+        // Get track counts for each tag, filtered by language
         const tagsWithCounts = await Promise.all(
             tags.map(async (tag) => {
-                const { count, error } = await supabaseClient
+                // First get tracks with this tag and language
+                const { data: trackTags, error } = await supabaseClient
                     .from('track_tags')
-                    .select('*', { count: 'exact', head: true })
+                    .select('track_id')
                     .eq('tag_id', tag.id);
+                
+                if (!trackTags || trackTags.length === 0) {
+                    return {
+                        ...tag,
+                        trackCount: 0
+                    };
+                }
+                
+                // Then filter by language
+                const trackIds = trackTags.map(tt => tt.track_id);
+                const { count } = await supabaseClient
+                    .from('tracks')
+                    .select('*', { count: 'exact', head: true })
+                    .in('id', trackIds)
+                    .eq('language', currentLang);
                 
                 return {
                     ...tag,
@@ -117,7 +138,7 @@ async function loadTagsWithCounts() {
     } catch (err) {
         console.error('Error:', err);
         document.getElementById('tagsCloud').innerHTML = 
-            '<p class="error">Ett fel uppstod</p>';
+            '<p class="error">An error occurred</p>';
     }
 }
 
@@ -129,7 +150,7 @@ function displayTags(tags) {
     const tagsWithTracks = tags.filter(tag => tag.trackCount > 0);
 
     if (tagsWithTracks.length === 0) {
-        container.innerHTML = '<p class="no-results">Inga taggar med låtar hittades</p>';
+        container.innerHTML = '<p class="no-results">No tags with tracks found</p>';
         return;
     }
 
@@ -155,7 +176,7 @@ function displayTags(tags) {
                       color: ${tag.color}; 
                       font-size: ${fontSize}em;
                       border-color: ${tag.color}40"
-               title="${trackCount} ${trackCount === 1 ? 'låt' : 'låtar'}">
+               title="${trackCount} ${trackCount === 1 ? 'track' : 'tracks'}">
                 ${tag.name}
                 <span class="tag-count">${trackCount}</span>
             </a>

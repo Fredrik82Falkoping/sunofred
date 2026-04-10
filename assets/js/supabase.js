@@ -294,7 +294,10 @@ document.getElementById("trackForm")?.addEventListener("submit", async (e) => {
   const form = e.target;
   const file = form.mp3.files[0];
   
-  if (!file) {
+  // Only require file on upload.html, not on edit.html
+  const isEditPage = window.location.pathname.includes('/edit.html');
+  
+  if (!file && !isEditPage) {
     alert("Please select an MP3 file");
     return;
   }
@@ -329,7 +332,15 @@ document.getElementById("trackForm")?.addEventListener("submit", async (e) => {
   submitBtn.disabled = true;
 
   // 1. Upload file to Storage
-  const fileName = `${Date.now()}-${file.name}`;
+  // Sanitize filename to handle special characters (åäö, apostrophes, etc.)
+  const sanitizedFileName = file.name
+    .normalize('NFD') // Decompose accented characters
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .replace(/[åä]/gi, 'a') // Replace å, ä with a
+    .replace(/ö/gi, 'o') // Replace ö with o
+    .replace(/[^a-zA-Z0-9.-]/g, '_'); // Replace other special chars with underscore
+  
+  const fileName = `${Date.now()}-${sanitizedFileName}`;
 
   const { error: uploadError } = await supabaseClient
     .storage

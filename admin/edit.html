@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Track | Sun of Red</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand">
+            <span class="eyebrow">Sun of Red</span>
+            <h1>Sun of Red</h1>
+            <p>Indie pop exploring reason, history and compassion.</p>
+        </div>
+        <nav class="site-nav">
+            <a href="../index.html">Home</a>
+            <a href="../browse.html">Explore</a>
+            <a href="upload.html">Single Upload</a>
+            <a href="multi-upload.html">Multi Upload</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="section-intro">
+                <span>Admin</span>
+                <h2>Edit Track</h2>
+                <p>Update track information.</p>
+            </div>
+
+            <div id="loadingMessage" class="loading">Loading track data...</div>
+            <div id="errorMessage" class="error" style="display: none;"></div>
+
+            <div class="upload-form-container" id="formContainer" style="display: none;">
+                <form id="trackForm">
+                    <div class="form-group">
+                        <label for="title">Track Title</label>
+                        <input type="text" name="title" id="title" placeholder="Enter song title" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea name="description" id="description" placeholder="Enter song description" rows="4" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="language">Language</label>
+                        <select name="language" id="language" required>
+                            <option value="">Select language...</option>
+                            <option value="en">English</option>
+                            <option value="sv">Swedish</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="categorySelect">Category</label>
+                        <div class="category-selector">
+                            <select name="category_id" id="categorySelect" required>
+                                <option value="">Select category...</option>
+                                <option value="__new__">+ Create new category</option>
+                            </select>
+                            <div id="newCategoryInput" class="new-category-input" style="display: none;">
+                                <input type="text" id="newCategoryName" placeholder="Enter new category name" />
+                                <button type="button" id="cancelNewCategory" class="button secondary small">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tags">Tags (comma-separated)</label>
+                        <div class="tag-input-container">
+                            <input 
+                                type="text" 
+                                name="tags" 
+                                id="tags" 
+                                placeholder="e.g., energetic, summer, dance" 
+                                autocomplete="off"
+                            />
+                            <div id="tagSuggestions" class="tag-suggestions"></div>
+                        </div>
+                        <small style="color: #666; font-size: 12px;">Separate tags with commas. New tags will be created automatically.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="spotify_url">Spotify URL (optional)</label>
+                        <input type="url" name="spotify_url" id="spotify_url" placeholder="https://open.spotify.com/track/..." />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Current MP3</label>
+                        <div id="currentMp3Info" style="padding: 10px; background: #f5f5f5; border-radius: 4px; margin-bottom: 10px;">
+                            <audio controls class="track-player" id="currentMp3Player" style="width: 100%;">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+                        <label for="mp3">Replace MP3 File (optional)</label>
+                        <input type="file" name="mp3" id="mp3" accept="audio/mpeg" />
+                        <small style="color: #666; font-size: 12px;">Leave empty to keep current file.</small>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="license" id="license" />
+                            <span>Licensed track (check if you have proper licensing)</span>
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="button primary">Save Changes</button>
+                        <button type="button" id="cancelButton" class="button secondary">Cancel</button>
+                        <button type="button" id="deleteButton" class="button" style="background: #dc2626; margin-left: auto;">Delete Track</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>&copy; 2025 Sun of Red. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase.js"></script>
+    <script>
+        let trackId = null;
+        let currentTrack = null;
+
+        // Get track ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        trackId = urlParams.get('id');
+
+        if (!trackId) {
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('errorMessage').textContent = 'No track ID provided';
+            document.getElementById('errorMessage').style.display = 'block';
+        } else {
+            loadTrackData();
+        }
+
+        async function loadTrackData() {
+            try {
+                // Check if user is authenticated
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                if (!user) {
+                    window.location.href = '../login.html';
+                    return;
+                }
+
+                // Load track data
+                const { data: track, error } = await supabaseClient
+                    .from('tracks')
+                    .select(`
+                        *,
+                        categories:category_id(id, name),
+                        track_tags(tags(id, name))
+                    `)
+                    .eq('id', trackId)
+                    .single();
+
+                if (error) {
+                    throw error;
+                }
+
+                if (!track) {
+                    throw new Error('Track not found');
+                }
+
+                currentTrack = track;
+                populateForm(track);
+                await loadCategories();
+                
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('formContainer').style.display = 'block';
+            } catch (err) {
+                console.error('Error loading track:', err);
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('errorMessage').textContent = 'Error loading track: ' + err.message;
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+
+        function populateForm(track) {
+            document.getElementById('title').value = track.title || '';
+            document.getElementById('description').value = track.description || '';
+            document.getElementById('language').value = track.language || '';
+            document.getElementById('spotify_url').value = track.spotify_url || '';
+            document.getElementById('license').checked = track.license || false;
+
+            // Set current MP3
+            if (track.mp3_url) {
+                document.getElementById('currentMp3Player').src = track.mp3_url;
+            }
+
+            // Extract tags
+            const tags = track.track_tags?.map(tt => tt.tags.name).join(', ') || '';
+            document.getElementById('tags').value = tags;
+        }
+
+        async function loadCategories() {
+            const { data: categories, error } = await supabaseClient
+                .from('categories')
+                .select('id, name')
+                .order('name');
+
+            if (error) {
+                console.error('Error loading categories:', error);
+                return;
+            }
+
+            const select = document.getElementById('categorySelect');
+            
+            // Clear existing options except first two
+            while (select.options.length > 2) {
+                select.remove(2);
+            }
+
+            // Add categories
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.name;
+                if (currentTrack.category_id === cat.id) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+
+        // Category handling
+        document.getElementById('categorySelect')?.addEventListener('change', function() {
+            const newCategoryInput = document.getElementById('newCategoryInput');
+            if (this.value === '__new__') {
+                newCategoryInput.style.display = 'block';
+                document.getElementById('newCategoryName').focus();
+            } else {
+                newCategoryInput.style.display = 'none';
+            }
+        });
+
+        document.getElementById('cancelNewCategory')?.addEventListener('click', () => {
+            document.getElementById('categorySelect').value = currentTrack.category_id || '';
+            document.getElementById('newCategoryInput').style.display = 'none';
+        });
+
+        // Tag autocomplete
+        let tagSuggestionsTimeout;
+        document.getElementById('tags')?.addEventListener('input', async function(e) {
+            clearTimeout(tagSuggestionsTimeout);
+            
+            const value = e.target.value;
+            const lastCommaIndex = value.lastIndexOf(',');
+            const currentTag = lastCommaIndex >= 0 
+                ? value.substring(lastCommaIndex + 1).trim()
+                : value.trim();
+
+            if (currentTag.length < 2) {
+                document.getElementById('tagSuggestions').style.display = 'none';
+                return;
+            }
+
+            tagSuggestionsTimeout = setTimeout(async () => {
+                const suggestions = await searchTags(currentTag);
+                showTagSuggestions(suggestions, currentTag);
+            }, 300);
+        });
+
+        async function searchTags(searchTerm) {
+            const { data, error } = await supabaseClient
+                .from('tags')
+                .select('name, color')
+                .ilike('name', `%${searchTerm}%`)
+                .limit(10);
+
+            return error ? [] : data;
+        }
+
+        function showTagSuggestions(suggestions, currentTag) {
+            const container = document.getElementById('tagSuggestions');
+            
+            if (!suggestions || suggestions.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.innerHTML = suggestions.map(tag => `
+                <div class="tag-suggestion" data-tag="${tag.name}">
+                    <span class="tag-dot" style="background-color: ${tag.color}"></span>
+                    ${tag.name}
+                </div>
+            `).join('');
+            container.style.display = 'block';
+
+            container.querySelectorAll('.tag-suggestion').forEach(elem => {
+                elem.addEventListener('click', () => {
+                    const tagInput = document.getElementById('tags');
+                    const value = tagInput.value;
+                    const lastCommaIndex = value.lastIndexOf(',');
+                    
+                    if (lastCommaIndex >= 0) {
+                        tagInput.value = value.substring(0, lastCommaIndex + 1) + ' ' + elem.dataset.tag + ', ';
+                    } else {
+                        tagInput.value = elem.dataset.tag + ', ';
+                    }
+                    
+                    container.style.display = 'none';
+                    tagInput.focus();
+                });
+            });
+        }
+
+        // Hide suggestions on outside click
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.tag-input-container')) {
+                document.getElementById('tagSuggestions').style.display = 'none';
+            }
+        });
+
+        // Form submission
+        document.getElementById('trackForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Saving...';
+
+            try {
+                const formData = new FormData(e.target);
+                
+                // Handle category
+                let categoryId = formData.get('category_id');
+                if (categoryId === '__new__') {
+                    const newCategoryName = document.getElementById('newCategoryName').value.trim();
+                    if (!newCategoryName) {
+                        alert('Please enter a category name');
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Save Changes';
+                        return;
+                    }
+                    categoryId = await createCategory(newCategoryName);
+                }
+
+                // Prepare track data
+                const trackData = {
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    language: formData.get('language'),
+                    category_id: categoryId,
+                    spotify_url: formData.get('spotify_url') || null,
+                    license: formData.get('license') === 'on'
+                };
+
+                // Handle MP3 file if provided
+                const mp3File = formData.get('mp3');
+                if (mp3File && mp3File.size > 0) {
+                    const mp3Url = await uploadMp3File(mp3File);
+                    if (mp3Url) {
+                        trackData.mp3_url = mp3Url;
+                    }
+                }
+
+                // Update track
+                const { error: updateError } = await supabaseClient
+                    .from('tracks')
+                    .update(trackData)
+                    .eq('id', trackId);
+
+                if (updateError) {
+                    throw updateError;
+                }
+
+                // Handle tags
+                const tagsString = formData.get('tags');
+                if (tagsString) {
+                    await updateTrackTags(trackId, tagsString);
+                }
+
+                alert('Track updated successfully!');
+                window.history.back();
+            } catch (err) {
+                console.error('Error updating track:', err);
+                alert('Error updating track: ' + err.message);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Save Changes';
+            }
+        });
+
+        async function createCategory(name) {
+            const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            const { data, error } = await supabaseClient
+                .from('categories')
+                .insert({ name, slug })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data.id;
+        }
+
+        async function uploadMp3File(file) {
+            // Sanitize filename to handle special characters (åäö, apostrophes, etc.)
+            const sanitizedFileName = file.name
+                .normalize('NFD') // Decompose accented characters
+                .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+                .replace(/[åä]/gi, 'a') // Replace å, ä with a
+                .replace(/ö/gi, 'o') // Replace ö with o
+                .replace(/[^a-zA-Z0-9.-]/g, '_'); // Replace other special chars with underscore
+            
+            const fileName = `${Date.now()}-${sanitizedFileName}`;
+            const { data, error } = await supabaseClient.storage
+                .from('tracks')
+                .upload(fileName, file);
+
+            if (error) {
+                console.error('Error uploading file:', error);
+                throw error;
+            }
+
+            const { data: urlData } = supabaseClient.storage
+                .from('tracks')
+                .getPublicUrl(fileName);
+
+            return urlData.publicUrl;
+        }
+
+        async function updateTrackTags(trackId, tagsString) {
+            // Delete existing tags
+            await supabaseClient
+                .from('track_tags')
+                .delete()
+                .eq('track_id', trackId);
+
+            // Add new tags
+            const tagNames = tagsString
+                .split(',')
+                .map(t => t.trim().toLowerCase())
+                .filter(t => t.length > 0);
+
+            if (tagNames.length > 0) {
+                await addTagsToTrack(trackId, tagNames);
+            }
+        }
+
+        async function addTagsToTrack(trackId, tagNames) {
+            const tagIds = [];
+
+            for (const tagName of tagNames) {
+                const tag = await getOrCreateTag(tagName);
+                if (tag) {
+                    tagIds.push(tag.id);
+                }
+            }
+
+            if (tagIds.length > 0) {
+                const trackTags = tagIds.map(tagId => ({
+                    track_id: trackId,
+                    tag_id: tagId
+                }));
+
+                const { error } = await supabaseClient
+                    .from('track_tags')
+                    .insert(trackTags);
+
+                if (error) {
+                    console.error('Error adding tags:', error);
+                }
+            }
+        }
+
+        async function getOrCreateTag(tagName) {
+            // Try to find existing tag
+            const { data: existing } = await supabaseClient
+                .from('tags')
+                .select('*')
+                .ilike('name', tagName)
+                .single();
+
+            if (existing) {
+                return existing;
+            }
+
+            // Create new tag
+            const colors = ['#EF4444', '#3B82F6', '#F59E0B', '#10B981', '#8B5CF6', '#EC4899'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+            const { data: newTag, error } = await supabaseClient
+                .from('tags')
+                .insert({ name: tagName, color: randomColor })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error creating tag:', error);
+                return null;
+            }
+
+            return newTag;
+        }
+
+        // Cancel button
+        document.getElementById('cancelButton')?.addEventListener('click', () => {
+            window.history.back();
+        });
+
+        // Delete button
+        document.getElementById('deleteButton')?.addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to delete this track? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('tracks')
+                    .delete()
+                    .eq('id', trackId);
+
+                if (error) throw error;
+
+                alert('Track deleted successfully');
+                window.location.href = '../browse.html';
+            } catch (err) {
+                console.error('Error deleting track:', err);
+                alert('Error deleting track: ' + err.message);
+            }
+        });
+
+        // Check auth on load
+        checkAuth();
+    </script>
+</body>
+</html>
