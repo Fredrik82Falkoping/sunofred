@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kategori | Sun of Red</title>
+    <title>Category | Sun of Red</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/browse.css">
 </head>
@@ -15,8 +15,8 @@
             <p>Indie pop exploring reason, history and compassion.</p>
         </div>
         <nav class="site-nav">
-            <a href="index.html">Hem</a>
-            <a href="browse.html">Bläddra</a>
+            <a href="index.html">Home</a>
+            <a href="browse.html">Explore</a>
             <a href="login.html">Admin</a>
         </nav>
     </header>
@@ -28,15 +28,15 @@
                     <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M19 12H5M12 19l-7-7 7-7"/>
                     </svg>
-                    Tillbaka till bläddra
+                    Back to explore
                 </a>
-                <span>Kategori</span>
-                <h2 id="categoryName">Laddar...</h2>
-                <p id="categoryDescription">Alla låtar i denna kategori</p>
+                <span>Category</span>
+                <h2 id="categoryName">Loading...</h2>
+                <p id="categoryDescription">All tracks in this category</p>
             </div>
 
             <div id="tracksContainer" class="tracks-container">
-                <div class="loading">Laddar låtar...</div>
+                <div class="loading">Loading tracks...</div>
             </div>
         </section>
     </main>
@@ -54,8 +54,8 @@
         const categoryName = urlParams.get('name');
 
         if (!categoryId) {
-            document.getElementById('categoryName').textContent = 'Kategori saknas';
-            document.getElementById('tracksContainer').innerHTML = '<p class="error">Ingen kategori vald. <a href="browse.html">Gå tillbaka</a></p>';
+            document.getElementById('categoryName').textContent = 'Category missing';
+            document.getElementById('tracksContainer').innerHTML = '<p class="error">No category selected. <a href="browse.html">Go back</a></p>';
         } else {
             // Set category name if provided
             if (categoryName) {
@@ -84,13 +84,13 @@
                 if (error) {
                     console.error('Error loading tracks:', error);
                     document.getElementById('tracksContainer').innerHTML = 
-                        '<p class="error">Kunde inte ladda låtar. Försök igen senare.</p>';
+                        '<p class="error">Could not load tracks. Please try again later.</p>';
                     return;
                 }
 
                 if (!tracks || tracks.length === 0) {
                     document.getElementById('tracksContainer').innerHTML = 
-                        '<p class="no-results">Inga låtar hittades i denna kategori.</p>';
+                        '<p class="no-results">No tracks found in this category.</p>';
                     return;
                 }
 
@@ -104,7 +104,7 @@
             } catch (err) {
                 console.error('Error:', err);
                 document.getElementById('tracksContainer').innerHTML = 
-                    '<p class="error">Ett fel uppstod. Försök igen senare.</p>';
+                    '<p class="error">An error occurred. Please try again later.</p>';
             }
         }
 
@@ -132,17 +132,26 @@
                     <div class="track-card">
                         <div class="track-header">
                             <h3 class="track-title">${track.title}</h3>
-                            ${tags.length > 0 ? `
-                                <div class="track-header-tags">
-                                    ${tags.map(tag => `
-                                        <a href="tag.html?id=${tag.id}&name=${encodeURIComponent(tag.name)}" 
-                                           class="tag-badge-small" 
-                                           style="background-color: ${tag.color}20; color: ${tag.color}; border-color: ${tag.color}40">
-                                            ${tag.name}
-                                        </a>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                ${tags.length > 0 ? `
+                                    <div class="track-header-tags">
+                                        ${tags.map(tag => `
+                                            <a href="tag.html?id=${tag.id}&name=${encodeURIComponent(tag.name)}" 
+                                               class="tag-badge-small" 
+                                               style="background-color: ${tag.color}20; color: ${tag.color}; border-color: ${tag.color}40">
+                                                ${tag.name}
+                                            </a>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                                <a href="admin/edit.html?id=${track.id}" class="button secondary small" style="margin-left: auto;">
+                                    <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                    Edit
+                                </a>
+                            </div>
                         </div>
                         ${track.description ? `<p class="track-description">${track.description}</p>` : ''}
                         <div class="track-actions">
@@ -157,7 +166,7 @@
                             ${track.mp3_url ? `
                                 <audio controls class="track-player">
                                     <source src="${track.mp3_url}" type="audio/mpeg">
-                                    Din webbläsare stödjer inte audio-elementet.
+                                    Your browser does not support the audio element.
                                 </audio>
                             ` : ''}
                         </div>
