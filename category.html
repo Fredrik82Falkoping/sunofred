@@ -47,6 +47,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase.js"></script>
+    <script src="assets/js/language-filter.js"></script>
     <script>
         // Get category ID from URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -68,6 +69,8 @@
 
         async function loadCategoryTracks() {
             try {
+                const currentLang = window.languageFilter.getCurrentLanguage();
+                
                 // Fetch category details and tracks
                 const { data: tracks, error } = await supabaseClient
                     .from('tracks')
@@ -79,6 +82,7 @@
                         )
                     `)
                     .eq('category_id', categoryId)
+                    .eq('language', currentLang)
                     .order('created_at', { ascending: false });
 
                 if (error) {

@@ -47,6 +47,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase.js"></script>
+    <script src="assets/js/language-filter.js"></script>
     <script>
         // Get tag ID from URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -68,6 +69,8 @@
 
         async function loadTagTracks() {
             try {
+                const currentLang = window.languageFilter.getCurrentLanguage();
+                
                 // First get the tag details
                 const { data: tagData, error: tagError } = await supabaseClient
                     .from('tags')
@@ -105,8 +108,9 @@
                     return;
                 }
 
-                // Extract tracks from the nested structure
-                const tracks = trackTags?.map(tt => tt.tracks).filter(Boolean) || [];
+                // Extract tracks from the nested structure and filter by language
+                const tracks = trackTags?.map(tt => tt.tracks)
+                    .filter(track => track && track.language === currentLang) || [];
 
                 if (tracks.length === 0) {
                     document.getElementById('tracksContainer').innerHTML = 
