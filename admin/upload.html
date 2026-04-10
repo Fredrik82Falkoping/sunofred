@@ -15,9 +15,10 @@
         </div>
         <nav class="site-nav">
             <a href="../index.html">Home</a>
-            <a href="../browse.html">Bläddra</a>
+            <a href="../browse.html">Explore</a>
             <a href="upload.html" style="font-weight: 600;">Single Upload</a>
             <a href="multi-upload.html">Multi Upload</a>
+            <a href="edit-categories.html">Edit Categories</a>
         </nav>
     </header>
 
@@ -87,6 +88,7 @@
                     <div class="form-group">
                         <label for="mp3">MP3 File</label>
                         <input type="file" name="mp3" id="mp3" accept="audio/mpeg" required />
+                        <small style="color: #666; font-size: 12px;">The filename will auto-fill the title field</small>
                     </div>
 
                     <div class="form-group checkbox-group">
@@ -98,6 +100,32 @@
 
                     <div class="form-actions">
                         <button type="submit" class="button primary">Upload Track</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase.js"></script>
+    <script>
+        // Auto-fill title from MP3 filename
+        document.getElementById('mp3').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const titleInput = document.getElementById('title');
+            
+            // Only auto-fill if title is empty
+            if (file && !titleInput.value.trim()) {
+                // Remove file extension and clean up the name
+                let filename = file.name.replace(/\.[^/.]+$/, '');
+                // Replace underscores and hyphens with spaces
+                filename = filename.replace(/[_-]/g, ' ');
+                // Capitalize first letter of each word
+                filename = filename.replace(/\b\w/g, l => l.toUpperCase());
+                
+                titleInput.value = filename;
+            }
+        });
                         <a href="../index.html" class="button">Cancel</a>
                     </div>
                 </form>

@@ -53,18 +53,30 @@
         const urlParams = new URLSearchParams(window.location.search);
         const tagId = urlParams.get('id');
         const tagName = urlParams.get('name');
+        
+        // Check if user is authenticated
+        let isAuthenticated = false;
+        
+        async function checkAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            isAuthenticated = !!session;
+            console.log('Auth status:', isAuthenticated ? 'Authenticated' : 'Not authenticated');
+        }
 
         if (!tagId) {
             document.getElementById('tagName').textContent = 'Tag missing';
             document.getElementById('tracksContainer').innerHTML = '<p class="error">No tag selected. <a href="browse.html">Go back</a></p>';
         } else {
-            // Set tag name if provided
-            if (tagName) {
-                document.getElementById('tagName').textContent = tagName;
-            }
+            // Check auth then load tracks
+            checkAuth().then(() => {
+                // Set tag name if provided
+                if (tagName) {
+                    document.getElementById('tagName').textContent = tagName;
+                }
 
-            // Load tracks for this tag
-            loadTagTracks();
+                // Load tracks for this tag
+                loadTagTracks();
+            });
         }
 
         async function loadTagTracks() {
@@ -172,13 +184,15 @@
                                         `).join('')}
                                     </div>
                                 ` : ''}
-                                <a href="admin/edit.html?id=${track.id}" class="button secondary small" style="margin-left: auto;">
-                                    <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                    </svg>
-                                    Edit
-                                </a>
+                                ${isAuthenticated ? `
+                                    <a href="admin/edit.html?id=${track.id}" class="button secondary small" style="margin-left: auto;">
+                                        <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                        Edit
+                                    </a>
+                                ` : ''}
                             </div>
                         </div>
                         ${track.description ? `<p class="track-description">${track.description}</p>` : ''}

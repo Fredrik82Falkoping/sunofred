@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Categories | Sun of Red</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/categories.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand">
+            <span class="eyebrow">Sun of Red</span>
+            <h1>Sun of Red</h1>
+            <p>Indie pop exploring reason, history and compassion.</p>
+        </div>
+        <nav class="site-nav">
+            <a href="../index.html">Home</a>
+            <a href="../browse.html">Explore</a>
+            <a href="upload.html">Upload</a>
+            <a href="edit-categories.html" class="active">Edit Categories</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="section-intro">
+                <span>Admin</span>
+                <h2>Edit Categories</h2>
+                <p>Manage category names, descriptions, and images</p>
+            </div>
+
+            <div class="categories-list" id="categoriesList">
+                <p style="text-align: center; color: #6b7280;">Loading categories...</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Category</h2>
+            </div>
+            <form id="editForm">
+                <input type="hidden" id="editCategoryId" />
+                
+                <div class="form-group">
+                    <label for="editName">Category Name *</label>
+                    <input type="text" id="editName" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="editBody">Description</label>
+                    <textarea id="editBody" rows="4" placeholder="Optional description"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="editImage">Category Image</label>
+                    <div class="image-upload-preview" id="imagePreview">
+                        <div class="image-upload-placeholder">
+                            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                            </svg>
+                            <p>Click to upload image</p>
+                        </div>
+                    </div>
+                    <input type="file" id="editImage" accept="image/*" style="display: none;" />
+                    <small style="color: #666; font-size: 12px;">Optional category image (JPG, PNG, WebP)</small>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="button secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="button primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <p>&copy; 2025 Sun of Red. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase.js"></script>
+    <script>
+        let currentImageFile = null;
+        let currentCategory = null;
+
+        // Check authentication
+        async function checkAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            
+            // Show auth status in console for debugging
+            console.log('Auth status:', session ? 'Logged in as ' + session.user.email : 'Not logged in');
+            
+            if (!session) {
+                // Show friendly message instead of immediate redirect
+                const container = document.getElementById('categoriesList');
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <h3 style="color: #ef4444; margin-bottom: 16px;">⚠️ Authentication Required</h3>
+                        <p style="color: #6b7280; margin-bottom: 24px;">You need to be logged in to edit categories.</p>
+                        <a href="../login.html" class="button primary">Go to Login</a>
+                        <p style="color: #9ca3af; margin-top: 24px; font-size: 14px;">
+                            Or if you want to test without authentication, check the SQL file:<br>
+                            <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">/sql/dev_mode_policies.sql</code>
+                        </p>
+                    </div>
+                `;
+                return false;
+            }
+            return true;
+        }
+
+        // Load all categories
+        async function loadCategories() {
+            try {
+                const { data: categories, error } = await supabaseClient
+                    .from('categories')
+                    .select('*')
+                    .order('name');
+
+                if (error) {
+                    console.error('Error loading categories:', error);
+                    document.getElementById('categoriesList').innerHTML = 
+                        '<p class="error">Could not load categories</p>';
+                    return;
+                }
+
+                displayCategories(categories);
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('categoriesList').innerHTML = 
+                    '<p class="error">An error occurred</p>';
+            }
+        }
+
+        // Display categories
+        function displayCategories(categories) {
+            const container = document.getElementById('categoriesList');
+
+            if (!categories || categories.length === 0) {
+                container.innerHTML = '<div class="no-categories">No categories found</div>';
+                return;
+            }
+
+            const html = categories.map(cat => `
+                <div class="category-item">
+                    <div class="category-image-preview">
+                        ${cat.image_url 
+                            ? `<img src="${cat.image_url}" alt="${cat.name}" />`
+                            : `<svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                              </svg>`
+                        }
+                    </div>
+                    <div class="category-info">
+                        <h3>${cat.name}</h3>
+                        <p>${cat.body || 'No description'}</p>
+                    </div>
+                    <div class="category-actions">
+                        <button class="button small secondary" onclick="openEditModal('${cat.id}')">
+                            Edit
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        // Open edit modal
+        async function openEditModal(categoryId) {
+            try {
+                const { data: category, error } = await supabaseClient
+                    .from('categories')
+                    .select('*')
+                    .eq('id', categoryId)
+                    .single();
+
+                if (error) throw error;
+
+                currentCategory = category;
+                currentImageFile = null;
+
+                document.getElementById('editCategoryId').value = category.id;
+                document.getElementById('editName').value = category.name;
+                document.getElementById('editBody').value = category.body || '';
+
+                // Update image preview
+                const preview = document.getElementById('imagePreview');
+                if (category.image_url) {
+                    preview.innerHTML = `<img src="${category.image_url}" alt="${category.name}" />`;
+                } else {
+                    preview.innerHTML = `
+                        <div class="image-upload-placeholder">
+                            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                            </svg>
+                            <p>Click to upload image</p>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('editModal').classList.add('active');
+            } catch (err) {
+                console.error('Error loading category:', err);
+                alert('Could not load category details');
+            }
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            currentCategory = null;
+            currentImageFile = null;
+        }
+
+        // Image preview click handler
+        document.getElementById('imagePreview').addEventListener('click', () => {
+            document.getElementById('editImage').click();
+        });
+
+        // Image file change handler
+        document.getElementById('editImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                currentImageFile = file;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('imagePreview').innerHTML = 
+                        `<img src="${e.target.result}" alt="Preview" />`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const categoryId = document.getElementById('editCategoryId').value;
+            const name = document.getElementById('editName').value.trim();
+            const body = document.getElementById('editBody').value.trim();
+
+            if (!name) {
+                alert('Please enter a category name');
+                return;
+            }
+
+            try {
+                let imageUrl = currentCategory.image_url;
+
+                // Upload new image if selected
+                if (currentImageFile) {
+                    const fileExt = currentImageFile.name.split('.').pop();
+                    const fileName = `${categoryId}-${Date.now()}.${fileExt}`;
+
+                    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                        .from('category-images')
+                        .upload(fileName, currentImageFile, {
+                            cacheControl: '3600',
+                            upsert: true
+                        });
+
+                    if (uploadError) {
+                        console.error('Upload error:', uploadError);
+                        alert('Error uploading image: ' + uploadError.message);
+                        return;
+                    }
+
+                    // Get public URL
+                    const { data: urlData } = supabaseClient.storage
+                        .from('category-images')
+                        .getPublicUrl(fileName);
+
+                    imageUrl = urlData.publicUrl;
+
+                    // Delete old image if exists
+                    if (currentCategory.image_url) {
+                        const oldFileName = currentCategory.image_url.split('/').pop();
+                        await supabaseClient.storage
+                            .from('category-images')
+                            .remove([oldFileName]);
+                    }
+                }
+
+                // Update category
+                console.log('Attempting to update category:', categoryId);
+                console.log('Update data:', { name, body: body || null, image_url: imageUrl });
+                
+                const { data: updateData, error: updateError } = await supabaseClient
+                    .from('categories')
+                    .update({
+                        name: name,
+                        body: body || null,
+                        image_url: imageUrl
+                    })
+                    .eq('id', categoryId)
+                    .select(); // Add select() to return updated data
+
+                console.log('Update result:', { data: updateData, error: updateError });
+
+                if (updateError) {
+                    console.error('Update error:', updateError);
+                    alert('Error updating category: ' + updateError.message);
+                    return;
+                }
+
+                if (!updateData || updateData.length === 0) {
+                    console.warn('Update succeeded but no data returned - might be a policy issue');
+                    alert('Update may have failed due to permissions. Check console for details.');
+                    return;
+                }
+
+                alert('Category updated successfully!');
+                closeEditModal();
+                loadCategories();
+            } catch (err) {
+                console.error('Error:', err);
+                alert('An error occurred while saving');
+            }
+        });
+
+        // Close modal on outside click
+        document.getElementById('editModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editModal') {
+                closeEditModal();
+            }
+        });
+
+        // Initialize
+        checkAuth().then(authenticated => {
+            if (authenticated) {
+                loadCategories();
+            }
+        });
+    </script>
+</body>
+</html>

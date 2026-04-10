@@ -45,10 +45,31 @@ function addTrackItem() {
         <div class="form-group">
             <label for="mp3_${trackCounter}">MP3 File *</label>
             <input type="file" name="mp3_${trackCounter}" id="mp3_${trackCounter}" accept="audio/mpeg" required />
+            <small style="color: #666; font-size: 12px;">The filename will auto-fill the title field</small>
         </div>
     `;
     
     tracksContainer.appendChild(trackItem);
+    
+    // Add event listener to auto-fill title from filename
+    const mp3Input = trackItem.querySelector(`#mp3_${trackCounter}`);
+    const titleInput = trackItem.querySelector(`#title_${trackCounter}`);
+    
+    mp3Input.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        
+        // Only auto-fill if title is empty
+        if (file && !titleInput.value.trim()) {
+            // Remove file extension and clean up the name
+            let filename = file.name.replace(/\.[^/.]+$/, '');
+            // Replace underscores and hyphens with spaces
+            filename = filename.replace(/[_-]/g, ' ');
+            // Capitalize first letter of each word
+            filename = filename.replace(/\b\w/g, l => l.toUpperCase());
+            
+            titleInput.value = filename;
+        }
+    });
 }
 
 // Function to remove a track item
