@@ -582,3 +582,60 @@ audio {
         align-items: stretch;
     }
 }
+
+/* ==================== TAG INPUT & AUTOCOMPLETE ==================== */
+
+.tag-input-container {
+    position: relative;
+}
+
+.tag-suggestions {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(20, 20, 30, 0.98);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 0.85rem;
+    margin-top: 0.25rem;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    backdrop-filter: blur(10px);
+}
+
+.tag-suggestion-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-weight: 500;
+}
+
+.tag-suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.tag-suggestion-item:hover {
+    background: rgba(255,111,161,0.15);
+}
+
+.tag-suggestions::-webkit-scrollbar {
+    width: 8px;
+}
+
+.tag-suggestions::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+}
+
+.tag-suggestions::-webkit-scrollbar-thumb {
+    background: rgba(255,111,161,0.3);
+    border-radius: 4px;
+}
+
+.tag-suggestions::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,111,161,0.5);
+}

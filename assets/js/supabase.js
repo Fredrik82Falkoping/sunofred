@@ -3,6 +3,99 @@ const supabaseClient = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uZ2NteGlxeW9lZXdjd21rbmRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NjA4MzQsImV4cCI6MjA5MTEzNjgzNH0.RI3G2N9iwmHb0BTAuboZIPFH1ngysQ2Rd9b3IHCSyWc"
 );
 
+// ==================== AUTHENTICATION ====================
+
+// Helper function to get the correct path (works both locally and on GitHub Pages)
+function getRelativePath(path) {
+  // Get current directory
+  const currentPath = window.location.pathname;
+  const currentDir = currentPath.substring(0, currentPath.lastIndexOf('/'));
+  
+  // If we're in /admin/, go up one level
+  if (currentDir.endsWith('/admin')) {
+    return '..' + path;
+  }
+  
+  // If we're already in root or login page
+  return '.' + path;
+}
+
+// Check if user is authenticated (for protected pages)
+async function requireAuth() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  
+  if (!user) {
+    // User is not logged in, redirect to login page
+    window.location.href = getRelativePath('/login.html');
+    return null;
+  }
+  
+  return user;
+}
+
+// Sign out function
+async function signOut() {
+  const { error } = await supabaseClient.auth.signOut();
+  
+  if (error) {
+    console.error('Error signing out:', error);
+    alert('Failed to sign out');
+    return;
+  }
+  
+  window.location.href = getRelativePath('/login.html');
+}
+
+// Get current user
+async function getCurrentUser() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  return user;
+}
+
+// Add logout button to protected pages
+async function addLogoutButton() {
+  const user = await getCurrentUser();
+  
+  if (!user) return;
+  
+  const nav = document.querySelector('.site-nav');
+  
+  if (nav && !document.getElementById('logoutBtn')) {
+    const logoutBtn = document.createElement('a');
+    logoutBtn.id = 'logoutBtn';
+    logoutBtn.href = '#';
+    logoutBtn.textContent = 'Logga ut';
+    logoutBtn.style.cursor = 'pointer';
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (confirm('Är du säker på att du vill logga ut?')) {
+        signOut();
+      }
+    });
+    
+    nav.appendChild(logoutBtn);
+    
+    // Also show user email
+    const userInfo = document.createElement('span');
+    userInfo.style.marginRight = '20px';
+    userInfo.style.fontSize = '14px';
+    userInfo.style.opacity = '0.8';
+    userInfo.textContent = user.email;
+    nav.insertBefore(userInfo, logoutBtn);
+  }
+}
+
+// Protect admin pages - call this on admin pages
+if (window.location.pathname.includes('/admin/')) {
+  requireAuth().then(user => {
+    if (user) {
+      addLogoutButton();
+    }
+  });
+}
+
+// ==================== END AUTHENTICATION ====================
+
 // Load categories when page loads
 async function loadCategories() {
   const { data: categories, error } = await supabaseClient
@@ -92,6 +185,109 @@ if (document.getElementById("categorySelect")) {
   loadCategories();
 }
 
+// ==================== TAGS FUNCTIONALITY ====================
+
+// Get or create tag by name
+async function getOrCreateTag(tagName) {
+  const normalizedName = tagName.trim().toLowerCase();
+  
+  if (!normalizedName) return null;
+  
+  // Check if tag exists (case-insensitive)
+  const { data: existing, error: checkError } = await supabaseClient
+    .from("tags")
+    .select("*")
+    .ilike("name", normalizedName)
+    .single();
+  
+  if (existing) {
+    return existing;
+  }
+  
+  // Create new tag
+  const { data, error } = await supabaseClient
+    .from("tags")
+    .insert([{ 
+      name: normalizedName,
+      color: '#3B82F6' // Default color
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating tag:", error);
+    return null;
+  }
+
+  return data;
+}
+
+// Search tags by partial name
+async function searchTags(searchTerm) {
+  if (!searchTerm || searchTerm.trim().length === 0) {
+    return [];
+  }
+  
+  const { data, error } = await supabaseClient
+    .from("tags")
+    .select("*")
+    .ilike("name", `%${searchTerm.trim()}%`)
+    .order("name")
+    .limit(10);
+
+  if (error) {
+    console.error("Error searching tags:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Add tags to track
+async function addTagsToTrack(trackId, tagNames) {
+  if (!tagNames || tagNames.length === 0) return true;
+  
+  // Get or create all tags
+  const tagPromises = tagNames.map(name => getOrCreateTag(name));
+  const tags = await Promise.all(tagPromises);
+  
+  // Filter out any nulls
+  const validTags = tags.filter(tag => tag !== null);
+  
+  if (validTags.length === 0) return true;
+  
+  // Create track_tags relationships
+  const trackTags = validTags.map(tag => ({
+    track_id: trackId,
+    tag_id: tag.id
+  }));
+  
+  const { error } = await supabaseClient
+    .from("track_tags")
+    .insert(trackTags);
+
+  if (error) {
+    console.error("Error adding tags to track:", error);
+    return false;
+  }
+
+  return true;
+}
+
+// Parse comma-separated tag string
+function parseTagString(tagString) {
+  if (!tagString || tagString.trim().length === 0) {
+    return [];
+  }
+  
+  return tagString
+    .split(',')
+    .map(tag => tag.trim().toLowerCase())
+    .filter(tag => tag.length > 0);
+}
+
+// ==================== END TAGS FUNCTIONALITY ====================
+
 document.getElementById("trackForm")?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -157,7 +353,7 @@ document.getElementById("trackForm")?.addEventListener("submit", async (e) => {
   const mp3_url = data.publicUrl;
 
   // 3. Save to database
-  const { error: dbError } = await supabaseClient
+  const { data: insertedTrack, error: dbError } = await supabaseClient
     .from("tracks")
     .insert([{
       title: form.title.value,
@@ -167,7 +363,9 @@ document.getElementById("trackForm")?.addEventListener("submit", async (e) => {
       spotify_url: form.spotify_url.value || null,
       mp3_url: mp3_url,
       license: form.license.checked
-    }]);
+    }])
+    .select()
+    .single();
 
   if (dbError) {
     console.error("Database error:", dbError);
@@ -175,6 +373,13 @@ document.getElementById("trackForm")?.addEventListener("submit", async (e) => {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
     return;
+  }
+
+  // 4. Add tags if any
+  const tagsInput = form.tags?.value;
+  if (tagsInput && insertedTrack) {
+    const tagNames = parseTagString(tagsInput);
+    await addTagsToTrack(insertedTrack.id, tagNames);
   }
 
   alert("Track uploaded successfully!");

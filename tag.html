@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tagg | Sun of Red</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/browse.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand">
+            <span class="eyebrow">Sun of Red</span>
+            <h1>Sun of Red</h1>
+            <p>Indie pop exploring reason, history and compassion.</p>
+        </div>
+        <nav class="site-nav">
+            <a href="index.html">Hem</a>
+            <a href="browse.html">Bläddra</a>
+            <a href="login.html">Admin</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="section-intro">
+                <a href="browse.html" class="back-link">
+                    <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    Tillbaka till bläddra
+                </a>
+                <span>Tagg</span>
+                <h2 id="tagName">Laddar...</h2>
+                <p id="tagDescription">Alla låtar med denna tagg</p>
+            </div>
+
+            <div id="tracksContainer" class="tracks-container">
+                <div class="loading">Laddar låtar...</div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>&copy; 2025 Sun of Red. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase.js"></script>
+    <script>
+        // Get tag ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const tagId = urlParams.get('id');
+        const tagName = urlParams.get('name');
+
+        if (!tagId) {
+            document.getElementById('tagName').textContent = 'Tagg saknas';
+            document.getElementById('tracksContainer').innerHTML = '<p class="error">Ingen tagg vald. <a href="browse.html">Gå tillbaka</a></p>';
+        } else {
+            // Set tag name if provided
+            if (tagName) {
+                document.getElementById('tagName').textContent = tagName;
+            }
+
+            // Load tracks for this tag
+            loadTagTracks();
+        }
+
+        async function loadTagTracks() {
+            try {
+                // First get the tag details
+                const { data: tagData, error: tagError } = await supabaseClient
+                    .from('tags')
+                    .select('*')
+                    .eq('id', tagId)
+                    .single();
+
+                if (tagError) {
+                    console.error('Error loading tag:', tagError);
+                }
+
+                // Update tag name if we got it from database
+                if (tagData && !tagName) {
+                    document.getElementById('tagName').textContent = tagData.name;
+                }
+
+                // Fetch tracks with this tag
+                const { data: trackTags, error } = await supabaseClient
+                    .from('track_tags')
+                    .select(`
+                        tracks(
+                            *,
+                            categories:category_id(id, name, slug),
+                            track_tags(
+                                tags(id, name, color)
+                            )
+                        )
+                    `)
+                    .eq('tag_id', tagId);
+
+                if (error) {
+                    console.error('Error loading tracks:', error);
+                    document.getElementById('tracksContainer').innerHTML = 
+                        '<p class="error">Kunde inte ladda låtar. Försök igen senare.</p>';
+                    return;
+                }
+
+                // Extract tracks from the nested structure
+                const tracks = trackTags?.map(tt => tt.tracks).filter(Boolean) || [];
+
+                if (tracks.length === 0) {
+                    document.getElementById('tracksContainer').innerHTML = 
+                        '<p class="no-results">Inga låtar hittades med denna tagg.</p>';
+                    return;
+                }
+
+                // Display tracks
+                displayTracks(tracks);
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('tracksContainer').innerHTML = 
+                    '<p class="error">Ett fel uppstod. Försök igen senare.</p>';
+            }
+        }
+
+        function displayTracks(tracks) {
+            const container = document.getElementById('tracksContainer');
+            
+            const html = tracks.map(track => {
+                // Extract tags
+                const tags = track.track_tags?.map(tt => tt.tags).filter(Boolean) || [];
+                
+                // Build category badge
+                const categoryHtml = track.categories 
+                    ? `<a href="category.html?id=${track.categories.id}&name=${encodeURIComponent(track.categories.name)}" 
+                          class="category-badge">
+                            ${track.categories.name}
+                       </a>`
+                    : '';
+
+                // Build tags HTML
+                const tagsHtml = tags.length > 0 
+                    ? `<div class="track-tags">
+                        ${tags.map(tag => `
+                            <a href="tag.html?id=${tag.id}&name=${encodeURIComponent(tag.name)}" 
+                               class="tag-badge" 
+                               style="background-color: ${tag.color}20; color: ${tag.color}">
+                                ${tag.name}
+                            </a>
+                        `).join('')}
+                       </div>`
+                    : '';
+
+                return `
+                    <div class="track-card">
+                        <div class="track-header">
+                            <h3 class="track-title">${track.title}</h3>
+                            <div class="track-meta">
+                                ${categoryHtml}
+                                ${tags.length > 0 ? `
+                                    <div class="track-header-tags">
+                                        ${tags.map(tag => `
+                                            <a href="tag.html?id=${tag.id}&name=${encodeURIComponent(tag.name)}" 
+                                               class="tag-badge-small" 
+                                               style="background-color: ${tag.color}20; color: ${tag.color}; border-color: ${tag.color}40">
+                                                ${tag.name}
+                                            </a>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        ${track.description ? `<p class="track-description">${track.description}</p>` : ''}
+                        <div class="track-actions">
+                            ${track.spotify_url ? `
+                                <a href="${track.spotify_url}" target="_blank" class="button secondary">
+                                    <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                                    </svg>
+                                    Spotify
+                                </a>
+                            ` : ''}
+                            ${track.mp3_url ? `
+                                <audio controls class="track-player">
+                                    <source src="${track.mp3_url}" type="audio/mpeg">
+                                    Din webbläsare stödjer inte audio-elementet.
+                                </audio>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

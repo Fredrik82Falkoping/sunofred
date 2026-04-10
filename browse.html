@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bläddra | Sun of Red</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/browse.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand">
+            <span class="eyebrow">Sun of Red</span>
+            <h1>Sun of Red</h1>
+            <p>Indie pop exploring reason, history and compassion.</p>
+        </div>
+        <nav class="site-nav">
+            <a href="index.html">Hem</a>
+            <a href="browse.html" class="active">Utforska</a>
+            <a href="login.html">Admin</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="section-intro">
+                <span>Utforska</span>
+                <h2>Kategorier & Taggar</h2>
+                <p>Bläddra bland musik sorterat efter kategorier och taggar</p>
+            </div>
+
+            <!-- Categories Section -->
+            <div class="browse-section">
+                <h3 class="browse-heading">
+                    <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Kategorier
+                </h3>
+                <div id="categoriesGrid" class="categories-grid">
+                    <div class="loading">Laddar kategorier...</div>
+                </div>
+            </div>
+
+            <!-- Tags Section -->
+            <div class="browse-section">
+                <h3 class="browse-heading">
+                    <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                        <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                    </svg>
+                    Taggar
+                </h3>
+                <div id="tagsCloud" class="tags-cloud">
+                    <div class="loading">Laddar taggar...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>&copy; 2025 Sun of Red. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase.js"></script>
+    <script src="assets/js/browse.js"></script>
+</body>
+</html>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Track | Sun of Red</title>
-    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
     <header class="site-header">
@@ -15,9 +15,9 @@
         </div>
         <nav class="site-nav">
             <a href="../index.html">Home</a>
-            <a href="../index.html#music">Music</a>
-            <a href="../index.html#about">About</a>
-            <a href="../index.html#contact">Contact</a>
+            <a href="../browse.html">Bläddra</a>
+            <a href="upload.html" style="font-weight: 600;">Single Upload</a>
+            <a href="multi-upload.html">Multi Upload</a>
         </nav>
     </header>
 
@@ -65,6 +65,21 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="tags">Tags (comma-separated)</label>
+                        <div class="tag-input-container">
+                            <input 
+                                type="text" 
+                                name="tags" 
+                                id="tags" 
+                                placeholder="e.g., energetic, summer, dance" 
+                                autocomplete="off"
+                            />
+                            <div id="tagSuggestions" class="tag-suggestions"></div>
+                        </div>
+                        <small style="color: #666; font-size: 12px;">Separate tags with commas. New tags will be created automatically.</small>
+                    </div>
+
+                    <div class="form-group">
                         <label for="spotify_url">Spotify URL (optional)</label>
                         <input type="url" name="spotify_url" id="spotify_url" placeholder="https://open.spotify.com/track/..." />
                     </div>
@@ -96,5 +111,77 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase.js"></script>
+    <script src="../assets/js/auth.js"></script>
+    <script>
+        // Tag autocomplete functionality
+        let tagTimeout;
+        const tagsInput = document.getElementById('tags');
+        const suggestionsContainer = document.getElementById('tagSuggestions');
+        
+        if (tagsInput) {
+            tagsInput.addEventListener('input', function(e) {
+                clearTimeout(tagTimeout);
+                
+                const value = e.target.value;
+                const lastCommaIndex = value.lastIndexOf(',');
+                const currentTag = lastCommaIndex >= 0 
+                    ? value.substring(lastCommaIndex + 1).trim() 
+                    : value.trim();
+                
+                if (currentTag.length < 2) {
+                    suggestionsContainer.innerHTML = '';
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+                
+                tagTimeout = setTimeout(async () => {
+                    const suggestions = await searchTags(currentTag);
+                    displayTagSuggestions(suggestions, value, lastCommaIndex);
+                }, 300);
+            });
+            
+            // Close suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.tag-input-container')) {
+                    suggestionsContainer.innerHTML = '';
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+        }
+        
+        function displayTagSuggestions(suggestions, currentValue, lastCommaIndex) {
+            const container = document.getElementById('tagSuggestions');
+            
+            if (!suggestions || suggestions.length === 0) {
+                container.innerHTML = '';
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.innerHTML = '';
+            container.style.display = 'block';
+            
+            suggestions.forEach(tag => {
+                const div = document.createElement('div');
+                div.className = 'tag-suggestion-item';
+                div.textContent = tag.name;
+                div.style.color = tag.color;
+                
+                div.addEventListener('click', function() {
+                    const tagsInput = document.getElementById('tags');
+                    const beforeCurrent = lastCommaIndex >= 0 
+                        ? currentValue.substring(0, lastCommaIndex + 1) 
+                        : '';
+                    
+                    tagsInput.value = beforeCurrent + (beforeCurrent ? ' ' : '') + tag.name + ', ';
+                    container.innerHTML = '';
+                    container.style.display = 'none';
+                    tagsInput.focus();
+                });
+                
+                container.appendChild(div);
+            });
+        }
+    </script>
 </body>
 </html>

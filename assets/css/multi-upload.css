@@ -1,0 +1,153 @@
+/* Multi Upload Styles */
+
+.multi-upload-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Shared fields section */
+.shared-fields {
+    background: #555;
+    padding: 30px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    border: 2px solid #444;
+}
+
+.shared-fields h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+/* Override form-group labels for dark background */
+.shared-fields .form-group label {
+    color: #fff;
+}
+
+/* Tracks container */
+.tracks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+/* Individual track items */
+.track-item {
+    background: #555;
+    border: 2px solid #c4102e;
+    border-radius: 8px;
+    padding: 25px;
+    position: relative;
+}
+
+.track-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #777;
+}
+
+.track-item-header h4 {
+    margin: 0;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+/* Override form-group labels for dark background in track items */
+.track-item .form-group label {
+    color: #fff;
+}
+
+/* Remove track button */
+.remove-track-btn {
+    background: #ff4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.3s;
+}
+
+.remove-track-btn:hover {
+    background: #cc0000;
+}
+
+/* Add track button */
+.add-track-btn {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background 0.3s;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.add-track-btn:hover {
+    background: #45a049;
+}
+
+/* Upload progress section */
+.upload-progress {
+    display: none;
+    margin-top: 20px;
+    padding: 25px;
+    background: #e3f2fd;
+    border-radius: 8px;
+    border: 2px solid #2196F3;
+}
+
+.upload-progress.active {
+    display: block;
+}
+
+.upload-progress h4 {
+    color: #1976D2;
+    font-size: 18px;
+    margin-top: 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 35px;
+    background: #ddd;
+    border-radius: 15px;
+    overflow: hidden;
+    margin: 15px 0;
+    border: 2px solid #999;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2196F3, #4CAF50);
+    width: 0%;
+    transition: width 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 15px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.progress-status {
+    margin-top: 10px;
+    font-size: 15px;
+    color: #222;
+    font-weight: 500;
+}

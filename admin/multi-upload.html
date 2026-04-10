@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi Upload Tracks | Sun of Red</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/multi-upload.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand">
+            <span class="eyebrow">Sun of Red</span>
+            <h1>Sun of Red</h1>
+            <p>Indie pop exploring reason, history and compassion.</p>
+        </div>
+        <nav class="site-nav">
+            <a href="../index.html">Home</a>
+            <a href="../browse.html">Bläddra</a>
+            <a href="upload.html">Single Upload</a>
+            <a href="multi-upload.html" style="font-weight: 600;">Multi Upload</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="section-intro">
+                <span>Admin</span>
+                <h2>Multi Upload Tracks</h2>
+                <p>Upload multiple songs at once with shared settings.</p>
+            </div>
+
+            <div class="multi-upload-container">
+                <form id="multiTrackForm">
+                    <!-- Shared fields for all tracks -->
+                    <div class="shared-fields">
+                        <h3>📁 Shared Settings (for all tracks)</h3>
+                        
+                        <div class="form-group">
+                            <label for="language">Language</label>
+                            <select name="language" id="language" required>
+                                <option value="">Select language...</option>
+                                <option value="en">English</option>
+                                <option value="sv">Swedish</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="categorySelect">Category</label>
+                            <div class="category-selector">
+                                <select name="category_id" id="categorySelect" required>
+                                    <option value="">Select category...</option>
+                                    <option value="__new__">+ Create new category</option>
+                                </select>
+                                <div id="newCategoryInput" class="new-category-input" style="display: none;">
+                                    <input type="text" id="newCategoryName" placeholder="Enter new category name" />
+                                    <button type="button" id="cancelNewCategory" class="button secondary small">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="license" id="license" />
+                                <span>All tracks are licensed (check if you have proper licensing)</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sharedTags">Tags (comma-separated)</label>
+                            <div class="tag-input-container">
+                                <input 
+                                    type="text" 
+                                    name="sharedTags" 
+                                    id="sharedTags" 
+                                    placeholder="e.g., energetic, summer, dance" 
+                                    autocomplete="off"
+                                />
+                                <div id="sharedTagSuggestions" class="tag-suggestions"></div>
+                            </div>
+                            <small style="color: #666; font-size: 12px;">These tags will be added to all tracks. Separate with commas.</small>
+                        </div>
+                    </div>
+
+                    <!-- Individual tracks -->
+                    <button type="button" class="add-track-btn" id="addTrackBtn">+ Add Track</button>
+                    
+                    <div class="tracks-container" id="tracksContainer">
+                        <!-- Track items will be added here dynamically -->
+                    </div>
+
+                    <!-- Upload progress -->
+                    <div class="upload-progress" id="uploadProgress">
+                        <h4 style="margin-top: 0;">Uploading tracks...</h4>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" id="progressBarFill">0%</div>
+                        </div>
+                        <div class="progress-status" id="progressStatus">Preparing...</div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="button primary">Upload All Tracks</button>
+                        <a href="../index.html" class="button">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>© 2026 Sun of Red • Independent artist project</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase.js"></script>
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/multi-upload.js"></script>
+    <script>
+        // Tag autocomplete functionality for multi-upload
+        let tagTimeout;
+        const tagsInput = document.getElementById('sharedTags');
+        const suggestionsContainer = document.getElementById('sharedTagSuggestions');
+        
+        if (tagsInput) {
+            tagsInput.addEventListener('input', function(e) {
+                clearTimeout(tagTimeout);
+                
+                const value = e.target.value;
+                const lastCommaIndex = value.lastIndexOf(',');
+                const currentTag = lastCommaIndex >= 0 
+                    ? value.substring(lastCommaIndex + 1).trim() 
+                    : value.trim();
+                
+                if (currentTag.length < 2) {
+                    suggestionsContainer.innerHTML = '';
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+                
+                tagTimeout = setTimeout(async () => {
+                    const suggestions = await searchTags(currentTag);
+                    displayTagSuggestions(suggestions, value, lastCommaIndex);
+                }, 300);
+            });
+            
+            // Close suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.tag-input-container')) {
+                    suggestionsContainer.innerHTML = '';
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+        }
+        
+        function displayTagSuggestions(suggestions, currentValue, lastCommaIndex) {
+            const container = document.getElementById('sharedTagSuggestions');
+            
+            if (!suggestions || suggestions.length === 0) {
+                container.innerHTML = '';
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.innerHTML = '';
+            container.style.display = 'block';
+            
+            suggestions.forEach(tag => {
+                const div = document.createElement('div');
+                div.className = 'tag-suggestion-item';
+                div.textContent = tag.name;
+                div.style.color = tag.color;
+                
+                div.addEventListener('click', function() {
+                    const tagsInput = document.getElementById('sharedTags');
+                    const beforeCurrent = lastCommaIndex >= 0 
+                        ? currentValue.substring(0, lastCommaIndex + 1) 
+                        : '';
+                    
+                    tagsInput.value = beforeCurrent + (beforeCurrent ? ' ' : '') + tag.name + ', ';
+                    container.innerHTML = '';
+                    container.style.display = 'none';
+                    tagsInput.focus();
+                });
+                
+                container.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
