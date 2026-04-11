@@ -8,7 +8,7 @@ async function loadCategoriesWithCounts() {
         // Get all categories
         const { data: categories, error: catError } = await supabaseClient
             .from('categories')
-            .select('id, name, slug')
+            .select('id, name, slug, image_url')
             .order('name');
 
         if (catError) {
@@ -62,14 +62,20 @@ function displayCategories(categories) {
 
     const html = categoriesWithTracks.map(category => {
         const trackCount = category.trackCount;
+        
         return `
             <a href="category.html?id=${category.id}&name=${encodeURIComponent(category.name)}" 
-               class="category-card">
-                <div class="category-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                </div>
+               class="category-card ${category.image_url ? 'has-image' : 'no-image'}">
+                    <div class="category-icon">
+                        ${category.image_url ? `
+                            <img src="${category.image_url}" alt="${category.name}" />
+                        </div>
+                        ` : `                     
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                        `}
+                    </div>
                 <h4 class="category-name">${category.name}</h4>
                 <p class="category-count">${trackCount} ${trackCount === 1 ? 'track' : 'tracks'}</p>
             </a>

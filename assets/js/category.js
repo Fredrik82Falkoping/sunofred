@@ -106,7 +106,7 @@ function setupPlayAllButton() {
         prevTrackButton.disabled = true;
         nextTrackButton.disabled = true;
         playAllButton.textContent = 'Play All';
-        nowPlayingLabel.textContent = 'Now playing: No song';
+        nowPlayingLabel.style.display = 'none';
         playAllActive = false;
         return;
     }
@@ -123,52 +123,92 @@ function setupPlayAllButton() {
         nextTrackButton.disabled = currentIndex >= audioPlayers.length - 1;
     }
 
-    function setNowPlaying(index) {
+    function showNowPlaying(index) {
         if (typeof index !== 'number' || index < 0 || index >= categoryTrackTitles.length) {
-            nowPlayingLabel.textContent = 'Now playing: No song';
+            nowPlayingLabel.style.display = 'none';
             return;
         }
+        nowPlayingLabel.style.display = 'block';
         nowPlayingLabel.textContent = `Now playing: ${categoryTrackTitles[index]}`;
+    }
+
+    function hideNowPlaying() {
+        nowPlayingLabel.style.display = 'none';
+    }
+
+    function stopAllAudio(excludeIndex = -1) {
+        audioPlayers.forEach((player, index) => {
+            if (index !== excludeIndex) {
+                player.pause();
+                player.currentTime = 0;
+            }
+        });
+    }
+
+    function isAnyAudioPlaying() {
+        return audioPlayers.some(player => !player.paused && player.currentTime > 0 && !player.ended);
     }
 
     function stopPlayAll() {
         playAllActive = false;
         playAllButton.textContent = 'Play All';
-        audioPlayers.forEach(player => {
-            player.pause();
-        });
+        stopAllAudio();
         updateButtonState();
-        setNowPlaying(-1);
+        hideNowPlaying();
     }
 
-    async function playTrack(index) {
+    async function playTrack(index, asPlayAll = false) {
         if (index < 0 || index >= audioPlayers.length) return;
 
-        audioPlayers.forEach(player => {
-            player.pause();
-        });
-
+        stopAllAudio(index);
         currentIndex = index;
         updateButtonState();
-        setNowPlaying(currentIndex);
+        showNowPlaying(currentIndex);
         playAllButton.textContent = 'Pause';
-        playAllActive = true;
+        playAllActive = asPlayAll;
 
         try {
             await audioPlayers[currentIndex].play();
         } catch (error) {
             console.warn('Unable to play track:', error);
-            stopPlayAll();
+            if (!asPlayAll) {
+                hideNowPlaying();
+            }
+            playAllActive = false;
         }
     }
 
     audioPlayers.forEach((player, index) => {
+        player.addEventListener('play', () => {
+            if (playAllActive && index !== currentIndex) return;
+            stopAllAudio(index);
+            currentIndex = index;
+            updateButtonState();
+            showNowPlaying(index);
+            playAllButton.textContent = playAllActive ? 'Pause' : 'Play All';
+        });
+
+        player.addEventListener('pause', () => {
+            setTimeout(() => {
+                if (!isAnyAudioPlaying()) {
+                    hideNowPlaying();
+                    playAllActive = false;
+                    playAllButton.textContent = 'Play All';
+                }
+            }, 50);
+        });
+
         player.onended = () => {
-            if (!playAllActive) return;
-            if (index + 1 < audioPlayers.length) {
-                playTrack(index + 1);
+            if (playAllActive) {
+                if (index + 1 < audioPlayers.length) {
+                    playTrack(index + 1, true);
+                } else {
+                    stopPlayAll();
+                }
             } else {
-                stopPlayAll();
+                if (!isAnyAudioPlaying()) {
+                    hideNowPlaying();
+                }
             }
         };
     });
@@ -178,17 +218,17 @@ function setupPlayAllButton() {
             stopPlayAll();
             return;
         }
-        await playTrack(currentIndex);
+        await playTrack(currentIndex, true);
     };
 
     prevTrackButton.onclick = async () => {
         if (currentIndex <= 0) return;
-        await playTrack(currentIndex - 1);
+        await playTrack(currentIndex - 1, false);
     };
 
     nextTrackButton.onclick = async () => {
         if (currentIndex >= audioPlayers.length - 1) return;
-        await playTrack(currentIndex + 1);
+        await playTrack(currentIndex + 1, false);
     };
 }
 

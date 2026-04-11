@@ -47,6 +47,14 @@
     cursor: pointer;
 }
 
+.category-card.has-image {
+    padding: 6px;
+}
+.category-card.has-image .category-icon {
+    width: auto;
+    height: auto;
+}
+
 .category-card:hover {
     border-color: var(--accent-color, #ef4444);
     background: white;
@@ -65,6 +73,13 @@
     border-radius: 12px;
     margin-bottom: 16px;
     transition: transform 0.3s ease;
+}
+
+.category-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
 }
 
 .category-card:hover .category-icon {
@@ -152,6 +167,8 @@
 }
 
 .track-card {
+    display: flex;
+    flex-direction: column;
     background: var(--bg-secondary, #f9fafb);
     border: 2px solid var(--border-color, #e5e7eb);
     border-radius: 12px;
@@ -273,6 +290,7 @@
     flex-wrap: wrap;
     gap: 12px;
     align-items: center;
+    margin-top: auto;
 }
 
 .track-player {
