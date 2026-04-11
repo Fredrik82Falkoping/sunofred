@@ -252,7 +252,6 @@ audio {
 .section-intro {
     display: grid;
     gap: 1rem;
-    max-width: 44rem;
 }
 
 .section-intro span {
