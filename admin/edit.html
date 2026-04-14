@@ -122,6 +122,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/language-filter.js"></script>
     <script src="../assets/js/supabase.js"></script>
     <script>
         let trackId = null;
@@ -153,7 +154,10 @@
                     .from('tracks')
                     .select(`
                         *,
-                        categories:category_id(id, name),
+                        categories:category_id(
+                            id,
+                            category_translations(name, locale)
+                        ),
                         track_tags(tags(id, name))
                     `)
                     .eq('id', trackId)
@@ -199,10 +203,20 @@
         }
 
         async function loadCategories() {
+            // Get current language if available, otherwise default to 'en'
+            const currentLang = window.languageFilter?.getCurrentLanguage() || 'en';
+            
             const { data: categories, error } = await supabaseClient
                 .from('categories')
-                .select('id, name')
-                .order('name');
+                .select(`
+                    id,
+                    category_translations!inner(
+                        name,
+                        locale
+                    )
+                `)
+                .eq('category_translations.locale', currentLang)
+                .order('category_translations.name');
 
             if (error) {
                 console.error('Error loading categories:', error);
@@ -220,7 +234,7 @@
             categories.forEach(cat => {
                 const option = document.createElement('option');
                 option.value = cat.id;
-                option.textContent = cat.name;
+                option.textContent = cat.category_translations[0].name;
                 if (currentTrack.category_id === cat.id) {
                     option.selected = true;
                 }
@@ -388,15 +402,41 @@
         });
 
         async function createCategory(name) {
+            // Get current language if available, otherwise default to 'en'
+            const currentLang = window.languageFilter?.getCurrentLanguage() || 'en';
             const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            const { data, error } = await supabaseClient
+            
+            // First create the category record
+            const { data: newCategory, error: categoryError } = await supabaseClient
                 .from('categories')
-                .insert({ name, slug })
+                .insert([{}])
                 .select()
                 .single();
 
-            if (error) throw error;
-            return data.id;
+            if (categoryError) throw categoryError;
+
+            // Then create the translation
+            const { error: translationError } = await supabaseClient
+                .from('category_translations')
+                .insert([{
+                    category_id: newCategory.id,
+                    locale: currentLang,
+                    name: name,
+                    slug: slug,
+                    body: null
+                }]);
+
+            if (translationError) {
+                // Try to clean up the category we just created
+                await supabaseClient
+                    .from('categories')
+                    .delete()
+                    .eq('id', newCategory.id);
+                
+                throw translationError;
+            }
+
+            return newCategory.id;
         }
 
         async function uploadMp3File(file) {

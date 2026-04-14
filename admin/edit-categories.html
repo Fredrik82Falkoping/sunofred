@@ -44,7 +44,16 @@
             </div>
             <form id="editForm">
                 <input type="hidden" id="editCategoryId" />
+                <input type="hidden" id="editTranslationId" />
                 
+                <div class="form-group">
+                    <label for="editLocale">Language</label>
+                    <select id="editLocale" required>
+                        <option value="en">English</option>
+                        <option value="sv">Swedish</option>
+                    </select>
+                </div>
+
                 <div class="form-group">
                     <label for="editName">Category Name *</label>
                     <input type="text" id="editName" required />
@@ -82,6 +91,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/language-filter.js"></script>
     <script src="../assets/js/supabase.js"></script>
     <script>
         let currentImageFile = null;
@@ -116,10 +126,23 @@
         // Load all categories
         async function loadCategories() {
             try {
+                // Get current language from language filter if available, otherwise use 'en'
+                const currentLang = window.languageFilter?.getCurrentLanguage() || 'en';
+                
                 const { data: categories, error } = await supabaseClient
                     .from('categories')
-                    .select('*')
-                    .order('name');
+                    .select(`
+                        id,
+                        image_url,
+                        category_translations(
+                            id,
+                            name,
+                            body,
+                            slug,
+                            locale
+                        )
+                    `)
+                    .eq('category_translations.locale', currentLang);
 
                 if (error) {
                     console.error('Error loading categories:', error);
@@ -128,7 +151,21 @@
                     return;
                 }
 
-                displayCategories(categories);
+                // Filter and sort categories with translations
+                const categoriesWithTranslations = (categories || [])
+                    .filter(cat => cat.category_translations && cat.category_translations.length > 0)
+                    .map(cat => ({
+                        id: cat.id,
+                        image_url: cat.image_url,
+                        category_translations: cat.category_translations
+                    }))
+                    .sort((a, b) => {
+                        const nameA = a.category_translations[0]?.name || '';
+                        const nameB = b.category_translations[0]?.name || '';
+                        return nameA.localeCompare(nameB);
+                    });
+
+                displayCategories(categoriesWithTranslations);
             } catch (err) {
                 console.error('Error:', err);
                 document.getElementById('categoriesList').innerHTML = 
@@ -145,27 +182,30 @@
                 return;
             }
 
-            const html = categories.map(cat => `
-                <div class="category-item">
-                    <div class="category-image-preview">
-                        ${cat.image_url 
-                            ? `<img src="${cat.image_url}" alt="${cat.name}" />`
-                            : `<svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                              </svg>`
-                        }
+            const html = categories.map(cat => {
+                const translation = cat.category_translations[0];
+                return `
+                    <div class="category-item">
+                        <div class="category-image-preview">
+                            ${cat.image_url 
+                                ? `<img src="${cat.image_url}" alt="${translation.name}" />`
+                                : `<svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                  </svg>`
+                            }
+                        </div>
+                        <div class="category-info">
+                            <h3>${translation.name}</h3>
+                            <p>${translation.body || 'No description'}</p>
+                        </div>
+                        <div class="category-actions">
+                            <button class="button small secondary" onclick="openEditModal('${cat.id}')">
+                                Edit
+                            </button>
+                        </div>
                     </div>
-                    <div class="category-info">
-                        <h3>${cat.name}</h3>
-                        <p>${cat.body || 'No description'}</p>
-                    </div>
-                    <div class="category-actions">
-                        <button class="button small secondary" onclick="openEditModal('${cat.id}')">
-                            Edit
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
             container.innerHTML = html;
         }
@@ -173,25 +213,50 @@
         // Open edit modal
         async function openEditModal(categoryId) {
             try {
+                // Get current language
+                const currentLang = window.languageFilter?.getCurrentLanguage() || 'en';
+                
                 const { data: category, error } = await supabaseClient
                     .from('categories')
-                    .select('*')
+                    .select(`
+                        id,
+                        image_url,
+                        category_translations(
+                            id,
+                            name,
+                            body,
+                            slug,
+                            locale
+                        )
+                    `)
                     .eq('id', categoryId)
+                    .eq('category_translations.locale', currentLang)
                     .single();
 
                 if (error) throw error;
+
+                // Find translation for current language
+                const translation = category.category_translations?.find(
+                    t => t.locale === currentLang
+                ) || category.category_translations?.[0];
+
+                if (!translation) {
+                    throw new Error('No translation found for this category');
+                }
 
                 currentCategory = category;
                 currentImageFile = null;
 
                 document.getElementById('editCategoryId').value = category.id;
-                document.getElementById('editName').value = category.name;
-                document.getElementById('editBody').value = category.body || '';
+                document.getElementById('editTranslationId').value = translation.id;
+                document.getElementById('editLocale').value = translation.locale;
+                document.getElementById('editName').value = translation.name;
+                document.getElementById('editBody').value = translation.body || '';
 
                 // Update image preview
                 const preview = document.getElementById('imagePreview');
                 if (category.image_url) {
-                    preview.innerHTML = `<img src="${category.image_url}" alt="${category.name}" />`;
+                    preview.innerHTML = `<img src="${category.image_url}" alt="${translation.name}" />`;
                 } else {
                     preview.innerHTML = `
                         <div class="image-upload-placeholder">
@@ -241,6 +306,8 @@
             e.preventDefault();
 
             const categoryId = document.getElementById('editCategoryId').value;
+            const translationId = document.getElementById('editTranslationId').value;
+            const locale = document.getElementById('editLocale').value;
             const name = document.getElementById('editName').value.trim();
             const body = document.getElementById('editBody').value.trim();
 
@@ -286,18 +353,35 @@
                     }
                 }
 
-                // Update category
-                console.log('Attempting to update category:', categoryId);
-                console.log('Update data:', { name, body: body || null, image_url: imageUrl });
+                // Update category (image_url only)
+                if (currentImageFile) {
+                    const { error: categoryError } = await supabaseClient
+                        .from('categories')
+                        .update({ image_url: imageUrl })
+                        .eq('id', categoryId);
+
+                    if (categoryError) {
+                        console.error('Category update error:', categoryError);
+                        alert('Error updating category image: ' + categoryError.message);
+                        return;
+                    }
+                }
+
+                // Update translation
+                const slug = name.toLowerCase().replace(/\s+/g, '_');
+                
+                console.log('Attempting to update translation:', translationId);
+                console.log('Update data:', { name, body: body || null, slug, locale });
                 
                 const { data: updateData, error: updateError } = await supabaseClient
-                    .from('categories')
+                    .from('category_translations')
                     .update({
                         name: name,
                         body: body || null,
-                        image_url: imageUrl
+                        slug: slug,
+                        locale: locale
                     })
-                    .eq('id', categoryId)
+                    .eq('id', translationId)
                     .select(); // Add select() to return updated data
 
                 console.log('Update result:', { data: updateData, error: updateError });

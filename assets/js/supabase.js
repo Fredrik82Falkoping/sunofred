@@ -98,15 +98,33 @@ if (window.location.pathname.includes('/admin/')) {
 
 // Load categories when page loads
 async function loadCategories() {
+  // Get current language if language filter is available, otherwise default to 'en'
+  const currentLang = window.languageFilter?.getCurrentLanguage() || 'en';
+  
   const { data: categories, error } = await supabaseClient
     .from("categories")
-    .select("*")
-    .order("name");
+    .select(`
+      id,
+      category_translations(
+        name,
+        locale
+      )
+    `)
+    .eq('category_translations.locale', currentLang);
 
   if (error) {
     console.error("Error loading categories:", error);
     return;
   }
+
+  // Filter categories that have translations and sort by name
+  const categoriesWithTranslations = (categories || [])
+    .filter(cat => cat.category_translations && cat.category_translations.length > 0)
+    .map(cat => ({
+      id: cat.id,
+      name: cat.category_translations[0].name
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const select = document.getElementById("categorySelect");
   
@@ -116,7 +134,7 @@ async function loadCategories() {
   }
 
   // Add categories from database
-  categories.forEach(category => {
+  categoriesWithTranslations.forEach(category => {
     const option = document.createElement("option");
     option.value = category.id;
     option.textContent = category.name;
@@ -146,38 +164,69 @@ document.getElementById("cancelNewCategory")?.addEventListener("click", () => {
 
 // Create new category
 async function createCategory(name) {
-  // First check if category already exists
+  // Get current language if available, otherwise default to 'en'
+  const currentLang = window.languageFilter?.getCurrentLanguage() || 'en';
+  
+  // First check if category already exists in this language
   const slug = name.toLowerCase().replace(/\s+/g, '_');
   
   const { data: existing, error: checkError } = await supabaseClient
-    .from("categories")
-    .select("*")
+    .from("category_translations")
+    .select(`
+      *,
+      categories(id)
+    `)
+    .eq('locale', currentLang)
     .or(`name.ilike.${name},slug.eq.${slug}`)
     .single();
   
-  // If category already exists, return it instead of creating new
+  // If category translation already exists, return the category
   if (existing) {
     console.log("Category already exists, using existing:", existing.name);
-    return existing;
+    return { id: existing.categories.id };
   }
   
   // Category doesn't exist, create it
-  const { data, error } = await supabaseClient
+  // First create the category record
+  const { data: newCategory, error: categoryError } = await supabaseClient
     .from("categories")
-    .insert([{ 
+    .insert([{}])
+    .select()
+    .single();
+
+  if (categoryError) {
+    console.error("Error creating category:", categoryError);
+    alert("Failed to create category: " + categoryError.message);
+    return null;
+  }
+
+  // Then create the translation
+  const { data: translation, error: translationError } = await supabaseClient
+    .from("category_translations")
+    .insert([{
+      category_id: newCategory.id,
+      locale: currentLang,
       name: name,
-      slug: slug
+      slug: slug,
+      body: null
     }])
     .select()
     .single();
 
-  if (error) {
-    console.error("Error creating category:", error);
-    alert("Failed to create category: " + error.message);
+  if (translationError) {
+    console.error("Error creating category translation:", translationError);
+    alert("Failed to create category translation: " + translationError.message);
+    
+    // Try to clean up the category we just created
+    await supabaseClient
+      .from("categories")
+      .delete()
+      .eq('id', newCategory.id);
+    
     return null;
   }
 
-  return data;
+  return newCategory;
 }
 
 // Initialize categories on page load

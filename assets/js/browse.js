@@ -1,54 +1,63 @@
-// Browse page functionality - loads categories and tags
+/**
+ * Browse Page - Refactored with MVC pattern
+ * Uses Category and Tag models for data operations
+ */
 
-// Load categories with track counts
+// Initialize models when supabase is ready
+let categoryModel;
+let tagModel;
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize models
+    categoryModel = new CategoryModel(supabaseClient);
+    tagModel = new TagModel(supabaseClient);
+    
+    // Load data
+    loadPage();
+});
+
+/**
+ * Main page load function
+ */
+async function loadPage() {
+    await Promise.all([
+        loadCategoriesWithCounts(),
+        loadTagsWithCounts()
+    ]);
+}
+
+/**
+ * Load and display categories with track counts
+ */
 async function loadCategoriesWithCounts() {
     try {
-        const currentLang = window.languageFilter.getCurrentLanguage();
-        
-        // Get all categories
-        const { data: categories, error: catError } = await supabaseClient
-            .from('categories')
-            .select('id, name, slug, image_url')
-            .order('name');
-
-        if (catError) {
-            console.error('Error loading categories:', catError);
-            document.getElementById('categoriesGrid').innerHTML = 
-                '<p class="error">Could not load categories</p>';
-            return;
-        }
-
-        if (!categories || categories.length === 0) {
-            document.getElementById('categoriesGrid').innerHTML = 
-                '<p class="no-results">No categories found</p>';
-            return;
-        }
-
-        // Get track counts for each category, filtered by language
-        const categoriesWithCounts = await Promise.all(
-            categories.map(async (category) => {
-                const { count, error } = await supabaseClient
-                    .from('tracks')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('category_id', category.id)
-                    .eq('language', currentLang);
-                
-                return {
-                    ...category,
-                    trackCount: count || 0
-                };
-            })
-        );
-
-        displayCategories(categoriesWithCounts);
-    } catch (err) {
-        console.error('Error:', err);
+        const categories = await categoryModel.getAllWithTrackCounts();
+        displayCategories(categories);
+    } catch (error) {
+        console.error('Error loading categories:', error);
         document.getElementById('categoriesGrid').innerHTML = 
-            '<p class="error">An error occurred</p>';
+            '<p class="error">Could not load categories</p>';
     }
 }
 
-// Display categories as cards
+/**
+ * Load and display tags with track counts
+ */
+async function loadTagsWithCounts() {
+    try {
+        const tags = await tagModel.getAllWithTrackCounts();
+        displayTags(tags);
+    } catch (error) {
+        console.error('Error loading tags:', error);
+        document.getElementById('tagsCloud').innerHTML = 
+            '<p class="error">Could not load tags</p>';
+    }
+}
+
+/**
+ * Display categories as cards
+ * @param {Array} categories - Categories with trackCount
+ */
 function displayCategories(categories) {
     const container = document.getElementById('categoriesGrid');
     
@@ -85,70 +94,10 @@ function displayCategories(categories) {
     container.innerHTML = html;
 }
 
-// Load tags with track counts
-async function loadTagsWithCounts() {
-    try {
-        const currentLang = window.languageFilter.getCurrentLanguage();
-        
-        // Get all tags
-        const { data: tags, error: tagsError } = await supabaseClient
-            .from('tags')
-            .select('id, name, color')
-            .order('name');
-
-        if (tagsError) {
-            console.error('Error loading tags:', tagsError);
-            document.getElementById('tagsCloud').innerHTML = 
-                '<p class="error">Could not load tags</p>';
-            return;
-        }
-
-        if (!tags || tags.length === 0) {
-            document.getElementById('tagsCloud').innerHTML = 
-                '<p class="no-results">No tags found</p>';
-            return;
-        }
-
-        // Get track counts for each tag, filtered by language
-        const tagsWithCounts = await Promise.all(
-            tags.map(async (tag) => {
-                // First get tracks with this tag and language
-                const { data: trackTags, error } = await supabaseClient
-                    .from('track_tags')
-                    .select('track_id')
-                    .eq('tag_id', tag.id);
-                
-                if (!trackTags || trackTags.length === 0) {
-                    return {
-                        ...tag,
-                        trackCount: 0
-                    };
-                }
-                
-                // Then filter by language
-                const trackIds = trackTags.map(tt => tt.track_id);
-                const { count } = await supabaseClient
-                    .from('tracks')
-                    .select('*', { count: 'exact', head: true })
-                    .in('id', trackIds)
-                    .eq('language', currentLang);
-                
-                return {
-                    ...tag,
-                    trackCount: count || 0
-                };
-            })
-        );
-
-        displayTags(tagsWithCounts);
-    } catch (err) {
-        console.error('Error:', err);
-        document.getElementById('tagsCloud').innerHTML = 
-            '<p class="error">An error occurred</p>';
-    }
-}
-
-// Display tags as a tag cloud
+/**
+ * Display tags as a tag cloud
+ * @param {Array} tags - Tags with trackCount
+ */
 function displayTags(tags) {
     const container = document.getElementById('tagsCloud');
     
@@ -191,9 +140,3 @@ function displayTags(tags) {
 
     container.innerHTML = html;
 }
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-    loadCategoriesWithCounts();
-    loadTagsWithCounts();
-});
