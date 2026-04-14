@@ -250,6 +250,147 @@ class CategoryModel {
     }
 
     /**
+     * Copy category translation to another language
+     * @param {string} categoryId - Category ID
+     * @param {string} fromLocale - Source locale
+     * @param {string} toLocale - Target locale
+     * @returns {Promise<Object>} Created translation
+     */
+    async copyToLanguage(categoryId, fromLocale, toLocale) {
+        // Check if translation already exists for target locale
+        const { data: existing } = await this.supabase
+            .from('category_translations')
+            .select('*')
+            .eq('category_id', categoryId)
+            .eq('locale', toLocale)
+            .single();
+
+        if (existing) {
+            throw new Error(`Translation for locale '${toLocale}' already exists`);
+        }
+
+        // Get the source translation
+        const { data: source, error: sourceError } = await this.supabase
+            .from('category_translations')
+            .select('*')
+            .eq('category_id', categoryId)
+            .eq('locale', fromLocale)
+            .single();
+
+        if (sourceError || !source) {
+            throw new Error(`Source translation for locale '${fromLocale}' not found`);
+        }
+
+        // Create new translation
+        const { data: newTranslation, error: createError } = await this.supabase
+            .from('category_translations')
+            .insert([{
+                category_id: categoryId,
+                locale: toLocale,
+                name: source.name,
+                slug: source.slug,
+                body: source.body
+            }])
+            .select()
+            .single();
+
+        if (createError) {
+            console.error('Error creating translation:', createError);
+            throw createError;
+        }
+
+        return newTranslation;
+    }
+
+    /**
+     * Delete a category translation
+     * If it's the last translation, also delete the category
+     * @param {string} categoryId - Category ID
+     * @param {string} locale - Locale to delete
+     * @returns {Promise<Object>} Result object with deletedTranslation and deletedCategory flags
+     */
+    async deleteTranslation(categoryId, locale) {
+        // First check if there are any tracks for this category in this language
+        const { count: trackCount } = await this.supabase
+            .from('tracks')
+            .select('*', { count: 'exact', head: true })
+            .eq('category_id', categoryId)
+            .eq('language', locale);
+
+        if (trackCount > 0) {
+            throw new Error(`Cannot delete: ${trackCount} track(s) exist for this category in this language`);
+        }
+
+        // Get all translations for this category
+        const { data: allTranslations } = await this.supabase
+            .from('category_translations')
+            .select('*')
+            .eq('category_id', categoryId);
+
+        // Delete the translation
+        const { error: translationError } = await this.supabase
+            .from('category_translations')
+            .delete()
+            .eq('category_id', categoryId)
+            .eq('locale', locale);
+
+        if (translationError) {
+            console.error('Error deleting translation:', translationError);
+            throw translationError;
+        }
+
+        let deletedCategory = false;
+
+        // If this was the last translation, check if we should delete the category
+        if (allTranslations.length === 1) {
+            // Check if there are any tracks for this category in ANY language
+            const { count: totalTrackCount } = await this.supabase
+                .from('tracks')
+                .select('*', { count: 'exact', head: true })
+                .eq('category_id', categoryId);
+
+            if (totalTrackCount === 0) {
+                // Safe to delete the category
+                const { error: categoryError } = await this.supabase
+                    .from('categories')
+                    .delete()
+                    .eq('id', categoryId);
+
+                if (categoryError) {
+                    console.error('Error deleting category:', categoryError);
+                    throw categoryError;
+                }
+
+                deletedCategory = true;
+            }
+        }
+
+        return {
+            deletedTranslation: true,
+            deletedCategory: deletedCategory
+        };
+    }
+
+    /**
+     * Check if a category can be deleted (no tracks in specified language)
+     * @param {string} categoryId - Category ID
+     * @param {string} locale - Locale to check
+     * @returns {Promise<Object>} Object with canDelete flag and trackCount
+     */
+    async canDeleteTranslation(categoryId, locale) {
+        const { count: trackCount } = await this.supabase
+            .from('tracks')
+            .select('*', { count: 'exact', head: true })
+            .eq('category_id', categoryId)
+            .eq('language', locale);
+
+        return {
+            canDelete: trackCount === 0,
+            trackCount: trackCount || 0
+        };
+    }
+
+    /**
      * Helper: Flatten category with translation data
      * @private
      */

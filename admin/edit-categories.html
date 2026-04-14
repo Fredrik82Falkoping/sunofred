@@ -80,7 +80,41 @@
 
                 <div class="modal-actions">
                     <button type="button" class="button secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="button" id="copyToLanguageBtn" class="button secondary" style="margin-right: auto;">
+                        Copy to Other Language
+                    </button>
+                    <button type="button" id="deleteTranslationBtn" class="button danger" style="display: none;">
+                        Delete Translation
+                    </button>
                     <button type="submit" class="button primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Copy Language Modal -->
+    <div id="copyLanguageModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Copy to Language</h2>
+            </div>
+            <form id="copyLanguageForm">
+                <p style="color: #666; margin-bottom: 20px;">
+                    This will copy the current category name and description to another language.
+                </p>
+                
+                <div class="form-group">
+                    <label for="targetLocale">Target Language *</label>
+                    <select id="targetLocale" required>
+                        <option value="">Select language...</option>
+                        <option value="en">English</option>
+                        <option value="sv">Swedish</option>
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="button secondary" onclick="closeCopyLanguageModal()">Cancel</button>
+                    <button type="submit" class="button primary">Copy</button>
                 </div>
             </form>
         </div>
@@ -92,10 +126,17 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/language-filter.js"></script>
+    <script src="../assets/js/models/Category.js"></script>
     <script src="../assets/js/supabase.js"></script>
     <script>
         let currentImageFile = null;
         let currentCategory = null;
+        let categoryModel = null;
+
+        // Initialize model
+        document.addEventListener('DOMContentLoaded', () => {
+            categoryModel = new CategoryModel(supabaseClient);
+        });
 
         // Check authentication
         async function checkAuth() {
@@ -269,9 +310,32 @@
                 }
 
                 document.getElementById('editModal').classList.add('active');
+                
+                // Check if translation can be deleted and show/hide delete button
+                await updateDeleteButton(category.id, translation.locale);
             } catch (err) {
                 console.error('Error loading category:', err);
                 alert('Could not load category details');
+            }
+        }
+
+        // Update delete button visibility
+        async function updateDeleteButton(categoryId, locale) {
+            const deleteBtn = document.getElementById('deleteTranslationBtn');
+            
+            try {
+                const result = await categoryModel.canDeleteTranslation(categoryId, locale);
+                
+                if (result.canDelete) {
+                    deleteBtn.style.display = 'inline-block';
+                    deleteBtn.title = 'Delete this translation';
+                } else {
+                    deleteBtn.style.display = 'none';
+                    deleteBtn.title = `Cannot delete: ${result.trackCount} track(s) exist`;
+                }
+            } catch (error) {
+                console.error('Error checking delete status:', error);
+                deleteBtn.style.display = 'none';
             }
         }
 
@@ -407,10 +471,97 @@
             }
         });
 
+        // Copy to language button handler
+        document.getElementById('copyToLanguageBtn').addEventListener('click', () => {
+            const currentLocale = document.getElementById('editLocale').value;
+            
+            // Update target locale options to exclude current language
+            const targetSelect = document.getElementById('targetLocale');
+            Array.from(targetSelect.options).forEach(option => {
+                if (option.value === currentLocale) {
+                    option.disabled = true;
+                } else {
+                    option.disabled = false;
+                }
+            });
+            
+            // Reset selection
+            targetSelect.value = '';
+            
+            // Show copy modal
+            document.getElementById('copyLanguageModal').classList.add('active');
+        });
+
+        // Close copy language modal
+        function closeCopyLanguageModal() {
+            document.getElementById('copyLanguageModal').classList.remove('active');
+        }
+
+        // Handle copy language form submission
+        document.getElementById('copyLanguageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const categoryId = document.getElementById('editCategoryId').value;
+            const fromLocale = document.getElementById('editLocale').value;
+            const toLocale = document.getElementById('targetLocale').value;
+
+            if (!toLocale) {
+                alert('Please select a target language');
+                return;
+            }
+
+            try {
+                await categoryModel.copyToLanguage(categoryId, fromLocale, toLocale);
+                
+                alert(`Category copied to ${toLocale === 'en' ? 'English' : 'Swedish'} successfully!`);
+                closeCopyLanguageModal();
+                closeEditModal();
+                loadCategories();
+            } catch (err) {
+                console.error('Error copying category:', err);
+                alert('Error: ' + err.message);
+            }
+        });
+
+        // Delete translation button handler
+        document.getElementById('deleteTranslationBtn').addEventListener('click', async () => {
+            const categoryId = document.getElementById('editCategoryId').value;
+            const locale = document.getElementById('editLocale').value;
+            const categoryName = document.getElementById('editName').value;
+
+            const langName = locale === 'en' ? 'English' : 'Swedish';
+            
+            if (!confirm(`Are you sure you want to delete the ${langName} translation for "${categoryName}"?\n\nThis cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const result = await categoryModel.deleteTranslation(categoryId, locale);
+                
+                let message = `${langName} translation deleted successfully!`;
+                if (result.deletedCategory) {
+                    message += '\n\nThe category was also deleted as it had no remaining translations or tracks.';
+                }
+                
+                alert(message);
+                closeEditModal();
+                loadCategories();
+            } catch (err) {
+                console.error('Error deleting translation:', err);
+                alert('Error: ' + err.message);
+            }
+        });
+
         // Close modal on outside click
         document.getElementById('editModal').addEventListener('click', (e) => {
             if (e.target.id === 'editModal') {
                 closeEditModal();
+            }
+        });
+
+        document.getElementById('copyLanguageModal').addEventListener('click', (e) => {
+            if (e.target.id === 'copyLanguageModal') {
+                closeCopyLanguageModal();
             }
         });
 
