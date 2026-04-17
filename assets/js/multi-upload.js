@@ -1,10 +1,12 @@
 // Multi-upload functionality
 
 let trackCounter = 0;
+let tagTimeout;
 
 // Add first track on page load
 document.addEventListener('DOMContentLoaded', () => {
     addTrackItem();
+    setupTagAutocomplete();
 });
 
 // Add track button
@@ -267,3 +269,77 @@ document.getElementById('multiTrackForm')?.addEventListener('submit', async (e) 
         loadCategories();
     }, 2000);
 });
+
+// ============================================
+// Tag Autocomplete Functionality
+// ============================================
+
+function setupTagAutocomplete() {
+    const tagsInput = document.getElementById('sharedTags');
+    const suggestionsContainer = document.getElementById('sharedTagSuggestions');
+    
+    if (!tagsInput || !suggestionsContainer) return;
+    
+    tagsInput.addEventListener('input', function(e) {
+        clearTimeout(tagTimeout);
+        
+        const value = e.target.value;
+        const lastCommaIndex = value.lastIndexOf(',');
+        const currentTag = lastCommaIndex >= 0 
+            ? value.substring(lastCommaIndex + 1).trim() 
+            : value.trim();
+        
+        if (currentTag.length < 2) {
+            suggestionsContainer.innerHTML = '';
+            suggestionsContainer.style.display = 'none';
+            return;
+        }
+        
+        tagTimeout = setTimeout(async () => {
+            const suggestions = await searchTags(currentTag);
+            displayTagSuggestions(suggestions, value, lastCommaIndex);
+        }, 300);
+    });
+    
+    // Close suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.tag-input-container')) {
+            suggestionsContainer.innerHTML = '';
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+}
+
+function displayTagSuggestions(suggestions, currentValue, lastCommaIndex) {
+    const container = document.getElementById('sharedTagSuggestions');
+    
+    if (!suggestions || suggestions.length === 0) {
+        container.innerHTML = '';
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.innerHTML = '';
+    container.style.display = 'block';
+    
+    suggestions.forEach(tag => {
+        const div = document.createElement('div');
+        div.className = 'tag-suggestion-item';
+        div.textContent = tag.name;
+        div.style.color = tag.color;
+        
+        div.addEventListener('click', function() {
+            const tagsInput = document.getElementById('sharedTags');
+            const beforeCurrent = lastCommaIndex >= 0 
+                ? currentValue.substring(0, lastCommaIndex + 1) 
+                : '';
+            
+            tagsInput.value = beforeCurrent + (beforeCurrent ? ' ' : '') + tag.name + ', ';
+            container.innerHTML = '';
+            container.style.display = 'none';
+            tagsInput.focus();
+        });
+        
+        container.appendChild(div);
+    });
+}

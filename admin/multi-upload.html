@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi Upload Tracks | Sun of Red</title>
+    <title>Upload Tracks | Sun of Red</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/multi-upload.css">
+    <link rel="icon" href="favicon.ico" sizes="any">
 </head>
 <body>
     <header class="site-header">
@@ -17,8 +18,7 @@
         <nav class="site-nav">
             <a href="../index.html">Home</a>
             <a href="../browse.html">Explore</a>
-            <a href="upload.html">Single Upload</a>
-            <a href="multi-upload.html" style="font-weight: 600;">Multi Upload</a>
+            <a href="multi-upload.html" style="font-weight: 600;">Upload</a>
             <a href="edit-categories.html">Edit Categories</a>
         </nav>
     </header>
@@ -27,8 +27,8 @@
         <section class="section">
             <div class="section-intro">
                 <span>Admin</span>
-                <h2>Multi Upload Tracks</h2>
-                <p>Upload multiple songs at once with shared settings.</p>
+                <h2>Upload Tracks</h2>
+                <p>Upload one or multiple songs with shared settings.</p>
             </div>
 
             <div class="multi-upload-container">
@@ -117,76 +117,5 @@
     <script src="../assets/js/supabase.js"></script>
     <script src="../assets/js/auth.js"></script>
     <script src="../assets/js/multi-upload.js"></script>
-    <script>
-        // Tag autocomplete functionality for multi-upload
-        let tagTimeout;
-        const tagsInput = document.getElementById('sharedTags');
-        const suggestionsContainer = document.getElementById('sharedTagSuggestions');
-        
-        if (tagsInput) {
-            tagsInput.addEventListener('input', function(e) {
-                clearTimeout(tagTimeout);
-                
-                const value = e.target.value;
-                const lastCommaIndex = value.lastIndexOf(',');
-                const currentTag = lastCommaIndex >= 0 
-                    ? value.substring(lastCommaIndex + 1).trim() 
-                    : value.trim();
-                
-                if (currentTag.length < 2) {
-                    suggestionsContainer.innerHTML = '';
-                    suggestionsContainer.style.display = 'none';
-                    return;
-                }
-                
-                tagTimeout = setTimeout(async () => {
-                    const suggestions = await searchTags(currentTag);
-                    displayTagSuggestions(suggestions, value, lastCommaIndex);
-                }, 300);
-            });
-            
-            // Close suggestions when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.tag-input-container')) {
-                    suggestionsContainer.innerHTML = '';
-                    suggestionsContainer.style.display = 'none';
-                }
-            });
-        }
-        
-        function displayTagSuggestions(suggestions, currentValue, lastCommaIndex) {
-            const container = document.getElementById('sharedTagSuggestions');
-            
-            if (!suggestions || suggestions.length === 0) {
-                container.innerHTML = '';
-                container.style.display = 'none';
-                return;
-            }
-            
-            container.innerHTML = '';
-            container.style.display = 'block';
-            
-            suggestions.forEach(tag => {
-                const div = document.createElement('div');
-                div.className = 'tag-suggestion-item';
-                div.textContent = tag.name;
-                div.style.color = tag.color;
-                
-                div.addEventListener('click', function() {
-                    const tagsInput = document.getElementById('sharedTags');
-                    const beforeCurrent = lastCommaIndex >= 0 
-                        ? currentValue.substring(0, lastCommaIndex + 1) 
-                        : '';
-                    
-                    tagsInput.value = beforeCurrent + (beforeCurrent ? ' ' : '') + tag.name + ', ';
-                    container.innerHTML = '';
-                    container.style.display = 'none';
-                    tagsInput.focus();
-                });
-                
-                container.appendChild(div);
-            });
-        }
-    </script>
 </body>
 </html>

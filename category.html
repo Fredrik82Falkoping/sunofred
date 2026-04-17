@@ -31,23 +31,23 @@
                     Back to explore
                 </a>
                 <span>Category</span>
-                <div style="display: flex; gap: 24px; align-items: flex-start; width: 100%;">
+                <div class="category-header-wrapper">
                     
-                    <div style="flex: 1;">
+                    <div class="category-header-content">
                         <h2 id="categoryName">Loading...</h2>
                         <p id="categoryDescription">All tracks in this category</p>
                     </div>
 
-                    <div id="categoryImageContainer" style="display: none;">
+                    <div id="categoryImageContainer" class="category-image-container">
                         <img 
-                            id="categoryImage" 
-                            style="width: 200px; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" 
+                            id="categoryImage"
+                            class="category-image" 
                         />
                     </div>
 
                 </div>
 
-                <div class="section-actions" style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                <div class="section-actions">
                     <button id="prevTrackBtn" class="button secondary" type="button" disabled>
                         Föregående
                     </button>
@@ -57,7 +57,7 @@
                     <button id="nextTrackBtn" class="button secondary" type="button" disabled>
                         Nästa
                     </button>
-                    <div id="nowPlayingLabel" class="now-playing" style="display: none;">
+                    <div id="nowPlayingLabel" class="now-playing hide">
                         Now playing: 
                     </div>
                 </div>

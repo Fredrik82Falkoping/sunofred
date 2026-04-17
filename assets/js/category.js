@@ -94,7 +94,7 @@ async function loadCategoryTracks() {
             const imageElement = document.getElementById('categoryImage');
             imageElement.src = categoryData.image_url;
             imageElement.alt = categoryTranslation?.name || 'Category';
-            imageContainer.style.display = 'block';
+            imageContainer.classList.add('show');
         }
 
         // Display tracks
@@ -184,7 +184,7 @@ function setupPlayAllButton() {
         prevTrackButton.disabled = true;
         nextTrackButton.disabled = true;
         playAllButton.textContent = 'Play All';
-        nowPlayingLabel.style.display = 'none';
+        nowPlayingLabel.classList.add('hide');
         playAllActive = false;
         return;
     }
@@ -203,15 +203,15 @@ function setupPlayAllButton() {
 
     function showNowPlaying(index) {
         if (typeof index !== 'number' || index < 0 || index >= categoryTrackTitles.length) {
-            nowPlayingLabel.style.display = 'none';
+            nowPlayingLabel.classList.add('hide');
             return;
         }
-        nowPlayingLabel.style.display = 'block';
+        nowPlayingLabel.classList.remove('hide');
         nowPlayingLabel.textContent = `Now playing: ${categoryTrackTitles[index]}`;
     }
 
     function hideNowPlaying() {
-        nowPlayingLabel.style.display = 'none';
+        nowPlayingLabel.classList.add('hide');
     }
 
     function stopAllAudio(excludeIndex = -1) {
