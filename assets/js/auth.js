@@ -23,7 +23,7 @@ async function checkAuthStatus() {
     
     if (user) {
         // User is logged in, redirect to admin page
-        window.location.href = getRelativePath('/admin/upload.html');
+        window.location.href = getRelativePath('/admin/multi-upload.html');
     }
 }
 
@@ -86,7 +86,7 @@ document.getElementById('authForm')?.addEventListener('submit', async (e) => {
                     showSuccess('Konto skapat! Kontrollera din e-post för att bekräfta ditt konto.');
                     // Note: Depending on Supabase settings, user might be auto-confirmed
                     setTimeout(() => {
-                        window.location.href = getRelativePath('/admin/upload.html');
+                        window.location.href = getRelativePath('/admin/multi-upload.html');
                     }, 2000);
                 }
             }
@@ -102,7 +102,7 @@ document.getElementById('authForm')?.addEventListener('submit', async (e) => {
             if (data.user) {
                 showSuccess('Inloggad! Omdirigerar...');
                 setTimeout(() => {
-                    window.location.href = getRelativePath('/admin/upload.html');
+                    window.location.href = getRelativePath('/admin/multi-upload.html');
                 }, 1000);
             }
         }
