@@ -39,7 +39,8 @@ async function loadCategories() {
         // Get current language from language filter if available, otherwise use 'en'
         const currentLang = window.languageFilter?.getCurrentLanguage() || 'en';
         
-        const { data: categories, error } = await supabaseClient
+        // Build query
+        let query = supabaseClient
             .from('categories')
             .select(`
                 id,
@@ -51,8 +52,14 @@ async function loadCategories() {
                     slug,
                     locale
                 )
-            `)
-            .eq('category_translations.locale', currentLang);
+            `);
+        
+        // Only filter by locale if not "all"
+        if (currentLang !== 'all') {
+            query = query.eq('category_translations.locale', currentLang);
+        }
+        
+        const { data: categories, error } = await query;
 
         if (error) {
             console.error('Error loading categories:', error);
@@ -126,7 +133,8 @@ async function openEditModal(categoryId) {
         // Get current language
         const currentLang = window.languageFilter?.getCurrentLanguage() || 'en';
         
-        const { data: category, error } = await supabaseClient
+        // Build query
+        let query = supabaseClient
             .from('categories')
             .select(`
                 id,
@@ -139,9 +147,14 @@ async function openEditModal(categoryId) {
                     locale
                 )
             `)
-            .eq('id', categoryId)
-            .eq('category_translations.locale', currentLang)
-            .single();
+            .eq('id', categoryId);
+        
+        // Only filter by locale if not "all"
+        if (currentLang !== 'all') {
+            query = query.eq('category_translations.locale', currentLang);
+        }
+        
+        const { data: category, error } = await query.single();
 
         if (error) throw error;
 
@@ -382,6 +395,7 @@ document.getElementById('copyLanguageForm').addEventListener('submit', async (e)
     try {
         await categoryModel.copyToLanguage(categoryId, fromLocale, toLocale);
         
+        //Todo: More languages
         alert(`Category copied to ${toLocale === 'en' ? 'English' : 'Swedish'} successfully!`);
         closeCopyLanguageModal();
         closeEditModal();
@@ -398,6 +412,7 @@ document.getElementById('deleteTranslationBtn').addEventListener('click', async 
     const locale = document.getElementById('editLocale').value;
     const categoryName = document.getElementById('editName').value;
 
+    //Todo: More languages
     const langName = locale === 'en' ? 'English' : 'Swedish';
     
     if (!confirm(`Are you sure you want to delete the ${langName} translation for "${categoryName}"?\n\nThis cannot be undone.`)) {

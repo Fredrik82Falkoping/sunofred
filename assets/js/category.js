@@ -32,8 +32,7 @@ async function loadCategoryTracks() {
     try {
         const currentLang = window.languageFilter.getCurrentLanguage();
         
-        // Fetch category details and tracks
-        const { data: tracks, error } = await supabaseClient
+        let query = supabaseClient
             .from('tracks')
             .select(`
                 *,
@@ -51,11 +50,17 @@ async function loadCategoryTracks() {
                     tags(id, name, color)
                 )
             `)
-            .eq('category_id', categoryId)
-            .eq('language', currentLang)
-            .order('created_at', { ascending: false });
+            .eq('category_id', categoryId);
+        
+        // Only filter by language if not "all"
+        if (currentLang !== 'all') {
+            query = query.eq('language', currentLang);
+        }
+        
+        // Fetch category details and tracks
+        const { data: tracks, error } = await query.order('created_at', { ascending: false });
 
-        console.log ('Fetched tracks for category:', tracks);
+        // console.log ('Fetched tracks for category:', tracks);
 
         if (error) {
             console.error('Error loading tracks:', error);
@@ -100,10 +105,40 @@ async function loadCategoryTracks() {
         // Display tracks
         categoryTrackTitles = tracks.map(track => track.title || '');
         displayTracks(tracks);
+        
+        // Update language filter to show only available languages in this category
+        updateLanguageFilterForCategory();
     } catch (err) {
         console.error('Error:', err);
         document.getElementById('tracksContainer').innerHTML = 
             '<p class="error">An error occurred. Please try again later.</p>';
+    }
+}
+
+// Update language filter based on tracks in this category
+async function updateLanguageFilterForCategory() {
+    try {
+        // Get all tracks in this category (without language filter)
+        const { data: allTracks, error } = await supabaseClient
+            .from('tracks')
+            .select('language')
+            .eq('category_id', categoryId);
+
+        if (error) {
+            console.error('Error fetching languages for category:', error);
+            return;
+        }
+
+        // Get unique languages in this category
+        const availableLanguages = [...new Set(allTracks.map(t => t.language))].filter(Boolean);
+        console.log('Available languages in category:', availableLanguages);
+
+        // Update the language selector to only show these languages
+        if (window.languageFilter && window.languageFilter.updateAvailableLanguages) {
+            window.languageFilter.updateAvailableLanguages(availableLanguages);
+        }
+    } catch (err) {
+        console.error('Error updating language filter:', err);
     }
 }
 

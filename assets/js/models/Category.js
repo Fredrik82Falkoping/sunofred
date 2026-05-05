@@ -23,7 +23,8 @@ class CategoryModel {
     async getAll(locale = null) {
         const currentLang = locale || this.getCurrentLanguage();
         
-        const { data, error } = await this.supabase
+        // Build query
+        let query = this.supabase
             .from('categories')
             .select(`
                 id,
@@ -36,8 +37,14 @@ class CategoryModel {
                     body,
                     locale
                 )
-            `)
-            .eq('category_translations.locale', currentLang);
+            `);
+        
+        // Only filter by locale if not "all"
+        if (currentLang !== 'all') {
+            query = query.eq('category_translations.locale', currentLang);
+        }
+        
+        const { data, error } = await query;
 
         if (error) {
             console.error('Error fetching categories:', error);
@@ -62,7 +69,8 @@ class CategoryModel {
     async getById(id, locale = null) {
         const currentLang = locale || this.getCurrentLanguage();
         
-        const { data, error } = await this.supabase
+        // Build query
+        let query = this.supabase
             .from('categories')
             .select(`
                 id,
@@ -76,9 +84,14 @@ class CategoryModel {
                     locale
                 )
             `)
-            .eq('id', id)
-            .eq('category_translations.locale', currentLang)
-            .single();
+            .eq('id', id);
+        
+        // Only filter by locale if not "all"
+        if (currentLang !== 'all') {
+            query = query.eq('category_translations.locale', currentLang);
+        }
+        
+        const { data, error } = await query.single();
 
         if (error) {
             console.error('Error fetching category:', error);
@@ -99,11 +112,18 @@ class CategoryModel {
         // Get track counts for each category
         const categoriesWithCounts = await Promise.all(
             categories.map(async (category) => {
-                const { count, error } = await this.supabase
+                // Build query
+                let query = this.supabase
                     .from('tracks')
                     .select('*', { count: 'exact', head: true })
-                    .eq('category_id', category.id)
-                    .eq('language', currentLang);
+                    .eq('category_id', category.id);
+                
+                // Only filter by language if not "all"
+                if (currentLang !== 'all') {
+                    query = query.eq('language', currentLang);
+                }
+                
+                const { count, error } = await query;
                 
                 return {
                     ...category,
