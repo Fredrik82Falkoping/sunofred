@@ -1,11 +1,5 @@
-// Make supabaseClient globally available
-const supabaseClient = supabase.createClient(
-  "https://ongcmxiqyoeewcwmkndr.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uZ2NteGlxeW9lZXdjd21rbmRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NjA4MzQsImV4cCI6MjA5MTEzNjgzNH0.RI3G2N9iwmHb0BTAuboZIPFH1ngysQ2Rd9b3IHCSyWc"
-);
-
-// Export to window for use in other modules
-window.supabaseClient = supabaseClient;
+// Supabase client is initialized in config.js
+// This file no longer initializes the client, it just uses window.supabaseClient
 
 // ==================== AUTHENTICATION ====================
 

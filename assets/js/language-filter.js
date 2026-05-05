@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Language filter: DOMContentLoaded');
     // Wait a bit for Supabase client to be loaded
     let attempts = 0;
-    const maxAttempts = 50; // Max 5 seconds
+    const maxAttempts = 10; // Max 1 second
     
     const initLanguageSelector = () => {
         attempts++;
