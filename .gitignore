@@ -5,3 +5,11 @@ assets/js/config.js
 .env
 .env.local
 .env.production
+
+# Node modules
+node_modules/
+package-lock.json
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,15 @@
+{
+  "name": "sunofred-spotify-sync",
+  "version": "1.0.0",
+  "description": "Sync Spotify tracks to Supabase",
+  "type": "module",
+  "scripts": {
+    "sync": "node --env-file=.env sync.js",
+    "get-token": "node --env-file=.env get-spotify-token.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "node-fetch": "^3.3.2",
+    "open": "^10.0.3"
+  }
+}

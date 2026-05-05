@@ -40,7 +40,8 @@ async function getAccessToken() {
   const data = await res.json()
 
   if (!data.access_token) {
-    throw new Error("Failed to get Spotify access token")
+    console.error("Spotify API response:", data)
+    throw new Error(`Failed to get Spotify access token: ${data.error || data.error_description || 'Unknown error'}`)
   }
 
   return data.access_token
@@ -48,10 +49,15 @@ async function getAccessToken() {
 
 // ======================
 // Hämta dina tracks från Spotify
-// (du kan hårdkoda artist ID)
 // ======================
 async function getTracks(accessToken) {
-  const artistId = "YOUR_ARTIST_ID"
+  // TODO: Ersätt med ditt riktiga Spotify Artist ID
+  // Hitta det på: https://open.spotify.com/artist/YOUR_ID
+  const artistId = process.env.SPOTIFY_ARTIST_ID || "YOUR_ARTIST_ID"
+  
+  if (artistId === "YOUR_ARTIST_ID") {
+    throw new Error("Please set SPOTIFY_ARTIST_ID in .env file")
+  }
 
   const res = await fetch(
     `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=SE`,
@@ -63,6 +69,11 @@ async function getTracks(accessToken) {
   )
 
   const data = await res.json()
+  
+  if (data.error) {
+    throw new Error(`Spotify API error: ${data.error.message}`)
+  }
+  
   return data.tracks || []
 }
 
