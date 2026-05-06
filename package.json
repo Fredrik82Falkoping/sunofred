@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "sync": "node --env-file=.env sync.js",
-    "get-token": "node --env-file=.env get-spotify-token.js"
+    "get-token": "node --env-file=.env get-spotify-token.js",
+    "test-api": "node --env-file=.env test-spotify-api.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

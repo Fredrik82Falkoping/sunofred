@@ -5,12 +5,19 @@ import { createClient } from "@supabase/supabase-js"
 // ENV
 // ======================
 const {
-  SPOTIFY_CLIENT_ID,
-  SPOTIFY_CLIENT_SECRET,
-  SPOTIFY_REFRESH_TOKEN,
+  LASTFM_API_KEY,
   SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY
 } = process.env
+
+if (!LASTFM_API_KEY) {
+  console.error('Error: LASTFM_API_KEY must be set in .env')
+  console.log('\nGet a free API key at: https://www.last.fm/api/account/create')
+  process.exit(1)
+}
+
+// Artist is always "Sun of Red"
+const ARTIST_NAME = "Sun Of Red"
 
 const supabase = createClient(
   SUPABASE_URL,
@@ -18,153 +25,179 @@ const supabase = createClient(
 )
 
 // ======================
-// Spotify auth (refresh token flow)
-// ======================
-async function getAccessToken() {
-  const res = await fetch("https://accounts.spotify.com/api/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Authorization":
-        "Basic " +
-        Buffer.from(
-          `${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`
-        ).toString("base64")
-    },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: SPOTIFY_REFRESH_TOKEN
-    })
-  })
-
-  const data = await res.json()
-
-  if (!data.access_token) {
-    console.error("Spotify API response:", data)
-    throw new Error(`Failed to get Spotify access token: ${data.error || data.error_description || 'Unknown error'}`)
-  }
-
-  return data.access_token
-}
-
-// ======================
-// Hämta tracks från Supabase
+// Hämta tracks från Supabase (endast de med Spotify ID)
 // ======================
 async function getTracksFromDatabase() {
   const { data, error } = await supabase
     .from("tracks")
-    .select("id, spotify_id")
+    .select("id, title, spotify_id")
     .not("spotify_id", "is", null);
 
   if (error) {
     throw new Error(`Failed to fetch tracks from database: ${error.message}`);
   }
 
-  // Extract Spotify IDs from URLs
-  const tracks = data.map(track => {
-    // Extract ID from URL like: https://open.spotify.com/track/ID
-    return {
-      dbId: track.id,
-      spotifyId: track.spotify_id,
-      spotifyUrl: `https://open.spotify.com/track/${track.spotify_id}` 
-    };
-  }).filter(t => t.spotifyId !== null);
-
-  return tracks;
+  return data.map(track => ({
+    dbId: track.id,
+    trackName: track.title,
+    artist: ARTIST_NAME
+  }));
 }
 
 // ======================
-// Hämta popularity från Spotify (fungerar utan Premium!)
+// Hämta track info från Last.fm
 // ======================
-async function getTrackPopularity(accessToken, spotifyId) {
-  const res = await fetch(
-    `https://api.spotify.com/v1/tracks/${spotifyId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    }
-  );
+async function getLastFmTrackInfo(artist, track) {
+  const params = new URLSearchParams({
+    method: 'track.getInfo',
+    api_key: LASTFM_API_KEY,
+    artist: artist,
+    track: track,
+    format: 'json'
+  });
 
+  const res = await fetch(`https://ws.audioscrobbler.com/2.0/?${params}`);
+  
   if (!res.ok) {
-    const text = await res.text();
-    console.error(`Error fetching track ${spotifyId}:`, text);
+    console.error(`❌ HTTP Error ${res.status} for ${artist} - ${track}`);
     return null;
   }
 
   const data = await res.json();
-  return data.popularity;
+  
+  if (data.error) {
+    console.error(`❌ Last.fm error for ${artist} - ${track}: ${data.message}`);
+    return null;
+  }
+
+  if (!data.track) {
+    console.log(`ℹ️  Track not found on Last.fm: ${artist} - ${track}`);
+    return null;
+  }
+
+  const trackData = data.track;
+  
+  return {
+    playcount: parseInt(trackData.playcount) || 0,
+    listeners: parseInt(trackData.listeners) || 0
+  };
 }
 
 // ======================
-// Uppdatera popularity för alla tracks
+// Sök efter track på Last.fm (om exakt match inte fungerar)
 // ======================
-async function updateTrackPopularities(accessToken, tracks) {
+async function searchLastFmTrack(artist, track) {
+  const params = new URLSearchParams({
+    method: 'track.search',
+    api_key: LASTFM_API_KEY,
+    artist: artist,
+    track: track,
+    limit: 1,
+    format: 'json'
+  });
+
+  const res = await fetch(`https://ws.audioscrobbler.com/2.0/?${params}`);
+  
+  if (!res.ok) {
+    return null;
+  }
+
+  const data = await res.json();
+  
+  if (data.results?.trackmatches?.track?.length > 0) {
+    const match = data.results.trackmatches.track[0];
+    // Try getInfo with the matched artist/track
+    return await getLastFmTrackInfo(match.artist, match.name);
+  }
+
+  return null;
+}
+
+// ======================
+// Uppdatera track med Last.fm data
+// ======================
+async function updateTracksWithLastFm(tracks) {
   let updated = 0;
-  let failed = 0;
+  let notFound = 0;
+  let errors = 0;
 
   for (const track of tracks) {
     try {
-      const popularity = await getTrackPopularity(accessToken, track.spotifyId);
+      console.log(`\n🔍 Processing: ${track.trackName}`);
+      console.log(`   🎸 Artist: ${track.artist}`);
       
-      if (popularity !== null) {
+      // Last.fm har inkonsekvent kapitalisering, så vi använder alltid search först
+      console.log(`   🔎 Searching Last.fm...`);
+      let lastFmData = await searchLastFmTrack(track.artist, track.trackName.trim());
+      
+      // Om search inte hittar något, försök med exakt match
+      if (!lastFmData) {
+        console.log(`   🔍 Trying exact match...`);
+        lastFmData = await getLastFmTrackInfo(track.artist, track.trackName.trim());
+      }
+      
+      if (lastFmData) {
         const { error } = await supabase
           .from("tracks")
-          .update({ 
-            popularity: popularity,
+          .update({
+            playcount: lastFmData.playcount,
+            listeners: lastFmData.listeners,
+            lastfm_tags: lastFmData.tags,
+            duration_ms: lastFmData.duration,
+            album_name: lastFmData.albumName,
+            album_cover_url: lastFmData.albumCover,
             updated_at: new Date().toISOString()
           })
           .eq("id", track.dbId);
 
         if (error) {
-          console.error(`❌ Failed to update track ${track.dbId}:`, error.message);
-          failed++;
+          console.error(`   ❌ Database error:`, error.message);
+          errors++;
         } else {
-          console.log(`✅ Updated track ${track.dbId}: popularity = ${popularity}`);
+          console.log(`   ✅ Playcount: ${lastFmData.playcount.toLocaleString()}, Listeners: ${lastFmData.listeners.toLocaleString()}`);
+          if (lastFmData.tags && lastFmData.tags.length > 0) {
+            console.log(`   🏷️  Tags: ${lastFmData.tags.join(', ')}`);
+          }
           updated++;
         }
       } else {
-        failed++;
+        console.log(`   ⚠️  Not found on Last.fm`);
+        notFound++;
       }
-
-      // Rate limiting: wait 100ms between requests
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
     } catch (err) {
-      console.error(`❌ Error processing track ${track.dbId}:`, err.message);
-      failed++;
+      console.error(`   ❌ Error: ${err.message}`);
+      errors++;
     }
   }
 
-  return { updated, failed };
+  return { updated, notFound, errors };
 }
-
-// ======================
-// MAIN
-// ======================
 async function main() {
   try {
-    console.log("🎵 Starting Spotify popularity sync...\n")
+    console.log("🎵 Starting Last.fm sync for Sun of Red...\n")
+    console.log("=" .repeat(50))
     
-    console.log("1️⃣ Getting Spotify access token...")
-    const token = await getAccessToken()
-    console.log("✅ Access token received\n")
-    
-    console.log("2️⃣ Fetching tracks from Supabase...")
+    console.log(`\n🎸 Artist: ${ARTIST_NAME}`)
+    console.log("\n1️⃣ Fetching tracks from Supabase...")
     const tracks = await getTracksFromDatabase()
-    console.log(`✅ Found ${tracks.length} tracks with Spotify IDs\n`)
+    console.log(`✅ Found ${tracks.length} tracks\n`)
 
     if (tracks.length === 0) {
-      console.log("ℹ️  No tracks to update. Add tracks with Spotify IDs first.")
+      console.log("ℹ️  No tracks to update. Add tracks first.")
       return
     }
 
-    console.log("3️⃣ Updating popularity from Spotify...")
-    const { updated, failed } = await updateTrackPopularities(token, tracks)
+    console.log("2️⃣ Fetching data from Last.fm...")
+    console.log("   (This may take a while...)\n")
+    
+    const { updated, notFound, errors } = await updateTracksWithLastFm(tracks)
 
+    console.log("\n" + "=".repeat(50))
     console.log(`\n✅ Sync complete!`)
-    console.log(`   Updated: ${updated}`)
-    console.log(`   Failed: ${failed}`)
+    console.log(`   ✅ Updated: ${updated}`)
+    console.log(`   ⚠️  Not found: ${notFound}`)
+    console.log(`   ❌ Errors: ${errors}`)
+    console.log(`\n💡 Tip: Tracks with higher playcount/listeners will rank higher!`)
   } catch (err) {
     console.error("\n❌ Sync failed:", err.message)
     if (err.stack) {
