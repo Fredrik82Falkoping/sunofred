@@ -48,57 +48,95 @@ async function getAccessToken() {
 }
 
 // ======================
-// Hämta dina tracks från Spotify
+// Hämta tracks från Supabase
 // ======================
-async function getTracks(accessToken) {
-  // TODO: Ersätt med ditt riktiga Spotify Artist ID
-  // Hitta det på: https://open.spotify.com/artist/YOUR_ID
-  const artistId = process.env.SPOTIFY_ARTIST_ID || "YOUR_ARTIST_ID"
-  
-  if (artistId === "YOUR_ARTIST_ID") {
-    throw new Error("Please set SPOTIFY_ARTIST_ID in .env file")
+async function getTracksFromDatabase() {
+  const { data, error } = await supabase
+    .from("tracks")
+    .select("id, spotify_id")
+    .not("spotify_id", "is", null);
+
+  if (error) {
+    throw new Error(`Failed to fetch tracks from database: ${error.message}`);
   }
 
+  // Extract Spotify IDs from URLs
+  const tracks = data.map(track => {
+    // Extract ID from URL like: https://open.spotify.com/track/ID
+    return {
+      dbId: track.id,
+      spotifyId: track.spotify_id,
+      spotifyUrl: `https://open.spotify.com/track/${track.spotify_id}` 
+    };
+  }).filter(t => t.spotifyId !== null);
+
+  return tracks;
+}
+
+// ======================
+// Hämta popularity från Spotify (fungerar utan Premium!)
+// ======================
+async function getTrackPopularity(accessToken, spotifyId) {
   const res = await fetch(
-    `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=SE`,
+    `https://api.spotify.com/v1/tracks/${spotifyId}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`
       }
     }
-  )
+  );
 
-  const data = await res.json()
-  
-  if (data.error) {
-    throw new Error(`Spotify API error: ${data.error.message}`)
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`Error fetching track ${spotifyId}:`, text);
+    return null;
   }
-  
-  return data.tracks || []
+
+  const data = await res.json();
+  return data.popularity;
 }
 
 // ======================
-// Sync till Supabase
+// Uppdatera popularity för alla tracks
 // ======================
-async function syncTracks(tracks) {
-  for (const track of tracks) {
-    const { error } = await supabase
-      .from("tracks")
-      .upsert({
-        spotify_id: track.id,
-        name: track.name,
-        popularity: track.popularity,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: "spotify_id"
-      })
+async function updateTrackPopularities(accessToken, tracks) {
+  let updated = 0;
+  let failed = 0;
 
-    if (error) {
-      console.error("Supabase error:", error)
-    } else {
-      console.log(`Updated: ${track.name} (${track.popularity})`)
+  for (const track of tracks) {
+    try {
+      const popularity = await getTrackPopularity(accessToken, track.spotifyId);
+      
+      if (popularity !== null) {
+        const { error } = await supabase
+          .from("tracks")
+          .update({ 
+            popularity: popularity,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", track.dbId);
+
+        if (error) {
+          console.error(`❌ Failed to update track ${track.dbId}:`, error.message);
+          failed++;
+        } else {
+          console.log(`✅ Updated track ${track.dbId}: popularity = ${popularity}`);
+          updated++;
+        }
+      } else {
+        failed++;
+      }
+
+      // Rate limiting: wait 100ms between requests
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+    } catch (err) {
+      console.error(`❌ Error processing track ${track.dbId}:`, err.message);
+      failed++;
     }
   }
+
+  return { updated, failed };
 }
 
 // ======================
@@ -106,16 +144,32 @@ async function syncTracks(tracks) {
 // ======================
 async function main() {
   try {
+    console.log("🎵 Starting Spotify popularity sync...\n")
+    
+    console.log("1️⃣ Getting Spotify access token...")
     const token = await getAccessToken()
-    const tracks = await getTracks(token)
+    console.log("✅ Access token received\n")
+    
+    console.log("2️⃣ Fetching tracks from Supabase...")
+    const tracks = await getTracksFromDatabase()
+    console.log(`✅ Found ${tracks.length} tracks with Spotify IDs\n`)
 
-    console.log(`Fetched ${tracks.length} tracks`)
+    if (tracks.length === 0) {
+      console.log("ℹ️  No tracks to update. Add tracks with Spotify IDs first.")
+      return
+    }
 
-    await syncTracks(tracks)
+    console.log("3️⃣ Updating popularity from Spotify...")
+    const { updated, failed } = await updateTrackPopularities(token, tracks)
 
-    console.log("Sync complete")
+    console.log(`\n✅ Sync complete!`)
+    console.log(`   Updated: ${updated}`)
+    console.log(`   Failed: ${failed}`)
   } catch (err) {
-    console.error("Sync failed:", err)
+    console.error("\n❌ Sync failed:", err.message)
+    if (err.stack) {
+      console.error("\nStack trace:", err.stack)
+    }
     process.exit(1)
   }
 }

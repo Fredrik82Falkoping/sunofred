@@ -97,7 +97,7 @@ class TrackModel {
                 description: trackData.description,
                 language: trackData.language || this.getCurrentLanguage(),
                 category_id: trackData.category_id,
-                spotify_url: trackData.spotify_url || null,
+                spotify_id: trackData.spotify_id || null,
                 mp3_url: trackData.mp3_url,
                 license: trackData.license || false
             }])

@@ -40,8 +40,8 @@ function addTrackItem() {
         </div>
 
         <div class="form-group">
-            <label for="spotify_url_${trackCounter}">Spotify URL (optional)</label>
-            <input type="url" name="spotify_url_${trackCounter}" id="spotify_url_${trackCounter}" placeholder="https://open.spotify.com/track/..." />
+            <label for="spotify_id_${trackCounter}">Spotify ID (optional)</label>
+            <input type="url" name="spotify_id_${trackCounter}" id="spotify_id_${trackCounter}" />
         </div>
 
         <div class="form-group">
@@ -142,7 +142,7 @@ document.getElementById('multiTrackForm')?.addEventListener('submit', async (e) 
         
         const title = document.getElementById(`title_${trackId}`).value;
         const description = document.getElementById(`description_${trackId}`).value;
-        const spotify_url = document.getElementById(`spotify_url_${trackId}`).value;
+        const spotify_id = document.getElementById(`spotify_id_${trackId}`).value;
         const mp3File = document.getElementById(`mp3_${trackId}`).files[0];
         
         if (!mp3File) {
@@ -153,7 +153,7 @@ document.getElementById('multiTrackForm')?.addEventListener('submit', async (e) 
         tracks.push({
             title,
             description,
-            spotify_url: spotify_url || null,
+            spotify_id: spotify_id || null,
             mp3File,
             language,
             category_id: categoryId,
@@ -213,7 +213,7 @@ document.getElementById('multiTrackForm')?.addEventListener('submit', async (e) 
                     description: track.description,
                     language: track.language,
                     category_id: track.category_id,
-                    spotify_url: track.spotify_url,
+                    spotify_id: track.spotify_id,
                     mp3_url: mp3_url,
                     license: track.license
                 }])

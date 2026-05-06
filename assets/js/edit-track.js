@@ -47,7 +47,7 @@ function populateForm(track) {
     document.getElementById('title').value = track.title || '';
     document.getElementById('description').value = track.description || '';
     document.getElementById('language').value = track.language || '';
-    document.getElementById('spotify_url').value = track.spotify_url || '';
+    document.getElementById('spotify_id').value = track.spotify_id || '';
     document.getElementById('license').checked = track.license || false;
 
     // Set current MP3
@@ -194,7 +194,7 @@ document.getElementById('trackForm')?.addEventListener('submit', async (e) => {
             description: formData.get('description'),
             language: formData.get('language'),
             category_id: categoryId,
-            spotify_url: formData.get('spotify_url') || null,
+            spotify_id: formData.get('spotify_id') || null,
             license: formData.get('license') === 'on'
         };
 

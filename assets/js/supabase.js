@@ -418,7 +418,7 @@ document.getElementById("trackForm")?.addEventListener("submit", async (e) => {
       description: form.description.value,
       language: form.language.value,
       category_id: categoryId,
-      spotify_url: form.spotify_url.value || null,
+      spotify_id: form.spotify_id.value || null,
       mp3_url: mp3_url,
       license: form.license.checked
     }])
