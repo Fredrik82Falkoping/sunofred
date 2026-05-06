@@ -1,5 +1,6 @@
 # Configuration files
-assets/js/config.js
+# assets/js/config.js
+.env
 
 # Environment variables
 .env
