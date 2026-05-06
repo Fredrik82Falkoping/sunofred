@@ -8,22 +8,29 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    
     steps:
       - uses: actions/checkout@v4
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - run: npm install node-fetch @supabase/supabase-js
 
-      - run: node sync.js
+      - name: Debug environment
+        run: |
+          echo "Checking environment variables..."
+          echo "LASTFM_API_KEY is set: ${{ secrets.LASTFM_API_KEY != '' }}"
+          echo "SUPABASE_URL is set: ${{ secrets.SUPABASE_URL != '' }}"
+          echo "SUPABASE_SERVICE_ROLE_KEY is set: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}"
+          echo "Node version: $(node -v)"
+
+      - name: Run sync script
         env:
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node sync.js
