@@ -77,7 +77,7 @@ async function addLanguageSelector() {
         ? allLanguages.filter(lang => lang.code === 'all' || availableLanguages.includes(lang.code))
         : allLanguages;
 
-    console.log('Showing languages:', languages.map(l => l.code));
+    // console.log('Showing languages:', languages.map(l => l.code));
 
     languages.forEach(({ code, label, flag }) => {
         const btn = document.createElement('button');

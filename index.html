@@ -15,7 +15,6 @@
             <p>Indie pop exploring reason, history and compassion.</p>
         </div>
         <nav class="site-nav">
-            <a href="#music">Music</a>
             <a href="browse.html">Explore</a>
             <a href="#about">About</a>
             <a href="#contact">Contact</a>
@@ -26,14 +25,13 @@
     <main>
         <section class="hero" id="hero">
             <div class="hero-content">
-                <p class="tag">NEW ALBUM</p>
-                <h2>The Red Sun Rises</h2>
+                <p class="tag">NEW ALBUM ON SPOTIFY</p>
+                <h2>Echoes of History</h2>
                 <p>
-                    Songs about truth, doubt and what it means to be human. 
-                    Inspired by history, driven by reason, grounded in compassion.
+                    Songs about moments in history that changed the course for man kind.
                 </p>
                 <div class="hero-actions">
-                    <a class="button primary" href="#music">Listen Now</a>
+                    <a class="button primary" href="https://open.spotify.com/album/6ffxo21lc3s22Jza80DF42">Listen Now</a>
                 </div>
             </div>
             <div class="hero-media">
@@ -41,7 +39,7 @@
             </div>
         </section>
 
-        <section class="section" id="music">
+        <!-- <section class="section" id="music">
             <div class="section-intro">
                 <span>Music</span>
                 <h2>Latest releases</h2>
@@ -143,39 +141,16 @@
                     </div>
                 </div>
             </div>
-        </section>
+        </section> -->
 
-        <section class="section preview-section" id="preview">
+        <section class="section" id="popular">
             <div class="section-intro">
-                <span>Preview</span>
-                <h2>Experimental songs</h2>
-                <p>Preview on future releases and seasonal themed songs.</p>
+                <span>Popular</span>
+                <h2>Most played tracks</h2>
+                <p>The most popular songs right now.</p>
             </div>
-            <div class="preview-grid">
-                <article class="preview-card">
-                    <h3>Easter special — Just another cross</h3>
-                    <p>The crucifixion of Jesus Christ seen from the perspective of the Roman Empire.</p>
-                    <audio controls>
-                        <source src="music/easter-just-another-cross.mp3" type="audio/mpeg">
-                        Your browser does not support the audio element.
-                    </audio>
-                </article>
-                <article class="preview-card">
-                    <h3>Easter — Passing over</h3>
-                    <p>The origin of the Jewish Easter seen from an ancient Egyptian perspective.</p>
-                    <audio controls>
-                        <source src="music/easter-passing-over.mp3" type="audio/mpeg">
-                        Your browser does not support the audio element.
-                    </audio>
-                </article>
-                <article class="preview-card">
-                    <h3>Blind belief</h3>
-                    <p>When faith bypasses moral considerations and leads to blind adherence.</p>
-                    <audio controls>
-                        <source src="music/blind-belief.mp3" type="audio/mpeg">
-                        Your browser does not support the audio element.
-                    </audio>
-                </article>
+            <div id="popularTracksContainer" class="preview-grid">
+                <div class="loading">Loading popular tracks...</div>
             </div>
         </section>
 
@@ -196,7 +171,7 @@
                 <div class="about-details">
                     <p><strong>Genre:</strong> Indie Pop / Alternative</p>
                     <p><strong>Themes:</strong> Truth, History, Humanism</p>
-                    <p><strong>Latest project:</strong> <em>The Red Sun Rises</em></p>
+                    <p><strong>Latest project:</strong> <em>Echoes of History</em></p>
                 </div>
             </div>
         </section>
@@ -220,5 +195,11 @@
     <footer class="site-footer">
         <p>© 2026 Sun of Red • Independent artist project</p>
     </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/supabase.js"></script>
+    <script src="assets/js/models/Track.js"></script>
+    <script src="assets/js/popular-tracks.js"></script>
 </body>
 </html>

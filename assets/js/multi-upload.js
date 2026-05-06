@@ -41,7 +41,7 @@ function addTrackItem() {
 
         <div class="form-group">
             <label for="spotify_id_${trackCounter}">Spotify ID (optional)</label>
-            <input type="url" name="spotify_id_${trackCounter}" id="spotify_id_${trackCounter}" />
+            <input type="text" name="spotify_id_${trackCounter}" id="spotify_id_${trackCounter}" />
         </div>
 
         <div class="form-group">

@@ -85,6 +85,45 @@ class TrackModel {
     }
 
     /**
+     * Get most popular tracks
+     * @param {number} limit - Number of tracks to fetch
+     * @returns {Promise<Array>} Array of tracks sorted by listeners then playcount
+     */
+    async getPopular(limit = 3) {
+        const currentLang = this.getCurrentLanguage();
+        
+        const { data, error } = await this.supabase
+            .from('tracks')
+            .select(`
+                *,
+                categories:category_id(
+                    id,
+                    image_url,
+                    category_translations(
+                        name,
+                        body,
+                        slug,
+                        locale
+                    )
+                ),
+                track_tags(
+                    tags(id, name, color)
+                )
+            `)
+            .not('listeners', 'is', null)
+            .order('listeners', { ascending: false })
+            .order('playcount', { ascending: false })
+            .limit(limit);
+
+        if (error) {
+            console.error('Error fetching popular tracks:', error);
+            throw error;
+        }
+
+        return (data || []).map(track => this._flattenTrack(track, currentLang));
+    }
+
+    /**
      * Create a new track
      * @param {Object} trackData - Track data
      * @returns {Promise<Object>} Created track
