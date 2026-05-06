@@ -21,12 +21,43 @@ jobs:
       - run: npm install node-fetch @supabase/supabase-js
 
       - name: Debug environment
+        env:
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          echo "Checking environment variables..."
-          echo "LASTFM_API_KEY is set: ${{ secrets.LASTFM_API_KEY != '' }}"
-          echo "SUPABASE_URL is set: ${{ secrets.SUPABASE_URL != '' }}"
-          echo "SUPABASE_SERVICE_ROLE_KEY is set: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}"
+          echo "=========================================="
+          echo "🔍 DEBUGGING ENVIRONMENT VARIABLES"
+          echo "=========================================="
+          echo ""
           echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          echo ""
+          echo "--- Checking Secrets ---"
+          echo "Secret defined in GitHub: LASTFM_API_KEY = ${{ secrets.LASTFM_API_KEY != '' }}"
+          echo "Secret defined in GitHub: SUPABASE_URL = ${{ secrets.SUPABASE_URL != '' }}"
+          echo "Secret defined in GitHub: SUPABASE_SERVICE_ROLE_KEY = ${{ secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}"
+          echo ""
+          echo "--- Checking Environment Variables ---"
+          if [ -z "$LASTFM_API_KEY" ]; then
+            echo "❌ LASTFM_API_KEY is EMPTY or NOT SET"
+          else
+            echo "✅ LASTFM_API_KEY is set (length: ${#LASTFM_API_KEY} chars)"
+            echo "   First 8 chars: ${LASTFM_API_KEY:0:8}..."
+          fi
+          
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "❌ SUPABASE_URL is EMPTY or NOT SET"
+          else
+            echo "✅ SUPABASE_URL is set: $SUPABASE_URL"
+          fi
+          
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "❌ SUPABASE_SERVICE_ROLE_KEY is EMPTY or NOT SET"
+          else
+            echo "✅ SUPABASE_SERVICE_ROLE_KEY is set (length: ${#SUPABASE_SERVICE_ROLE_KEY} chars)"
+          fi
+          echo "=========================================="
 
       - name: Run sync script
         env:
