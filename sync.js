@@ -173,8 +173,10 @@ async function updateTracksWithLastFm(tracks) {
   return { updated, notFound, errors };
 }
 async function main() {
+  const startTime = new Date();
   try {
-    console.log("🎵 Starting Last.fm sync for Sun of Red...\n")
+    console.log("🎵 Starting Last.fm sync for Sun of Red...")
+    console.log(`⏰ Start time: ${startTime.toISOString()}`)
     console.log("=" .repeat(50))
     
     console.log(`\n🎸 Artist: ${ARTIST_NAME}`)
@@ -192,12 +194,22 @@ async function main() {
     
     const { updated, notFound, errors } = await updateTracksWithLastFm(tracks)
 
+    const endTime = new Date();
+    const duration = ((endTime - startTime) / 1000).toFixed(2);
+
     console.log("\n" + "=".repeat(50))
     console.log(`\n✅ Sync complete!`)
     console.log(`   ✅ Updated: ${updated}`)
     console.log(`   ⚠️  Not found: ${notFound}`)
     console.log(`   ❌ Errors: ${errors}`)
+    console.log(`   ⏱️  Duration: ${duration}s`)
+    console.log(`   ⏰ Completed at: ${endTime.toISOString()}`)
     console.log(`\n💡 Tip: Tracks with higher playcount/listeners will rank higher!`)
+    
+    // Exit with error code if there were errors
+    if (errors > 0) {
+      process.exit(1);
+    }
   } catch (err) {
     console.error("\n❌ Sync failed:", err.message)
     if (err.stack) {

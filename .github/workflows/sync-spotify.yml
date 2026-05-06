@@ -1,0 +1,46 @@
+name: Sync Spotify Tracks
+
+on:
+  # Kör varje dag kl 00:00 UTC
+  schedule:
+    - cron: '0 0 * * *'
+  
+  # Tillåt manuell körning
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+      - name: Install dependencies
+        run: |
+          npm install @supabase/supabase-js node-fetch
+
+      - name: Run sync script
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node sync.js
+
+      - name: Report status
+        if: always()
+        run: |
+          echo "Sync job completed with status: ${{ job.status }}"
+          echo "Completed at: $(date)"
+          echo "Next scheduled run: Daily at 00:00 UTC"
