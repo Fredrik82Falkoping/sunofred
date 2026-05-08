@@ -109,14 +109,15 @@ class CategoryModel {
         const currentLang = this.getCurrentLanguage();
         const categories = await this.getAll();
 
-        // Get track counts for each category
+        // Get track counts for each category (excluding private tracks)
         const categoriesWithCounts = await Promise.all(
             categories.map(async (category) => {
                 // Build query
                 let query = this.supabase
                     .from('tracks')
                     .select('*', { count: 'exact', head: true })
-                    .eq('category_id', category.id);
+                    .eq('category_id', category.id)
+                    .eq('is_private', false); // Exclude private tracks
                 
                 // Only filter by language if not "all"
                 if (currentLang !== 'all') {

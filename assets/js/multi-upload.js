@@ -1,5 +1,9 @@
 // Multi-upload functionality
 
+// Initialize models
+const categoryModel = new CategoryModel(supabaseClient);
+const tagModel = new TagModel(supabaseClient);
+
 let trackCounter = 0;
 let tagTimeout;
 
@@ -7,6 +11,7 @@ let tagTimeout;
 document.addEventListener('DOMContentLoaded', () => {
     addTrackItem();
     setupTagAutocomplete();
+    loadCategories();
 });
 
 // Add track button
@@ -47,7 +52,7 @@ function addTrackItem() {
         <div class="form-group">
             <label for="mp3_${trackCounter}">MP3 File *</label>
             <input type="file" name="mp3_${trackCounter}" id="mp3_${trackCounter}" accept="audio/mpeg" required />
-            <small style="color: #666; font-size: 12px;">The filename will auto-fill the title field</small>
+            <small style="color: #aaa; font-size: 12px;">The filename will auto-fill the title field</small>
         </div>
     `;
     
@@ -101,6 +106,7 @@ document.getElementById('multiTrackForm')?.addEventListener('submit', async (e) 
     // Get shared values
     const language = form.language.value;
     const license = form.license.checked;
+    const isPrivate = form.is_private?.checked || false;
     const sharedTagsInput = document.getElementById('sharedTags')?.value || '';
     const sharedTagNames = parseTagString(sharedTagsInput);
     
@@ -157,6 +163,14 @@ document.getElementById('multiTrackForm')?.addEventListener('submit', async (e) 
             mp3File,
             language,
             category_id: categoryId,
+            license,
+            is_private: isPrivate
+        });
+        
+        // Debug logging for each track
+        console.log(`Track ${trackId} data:`, {
+            title,
+            is_private: isPrivate,
             license
         });
     }
@@ -205,23 +219,38 @@ document.getElementById('multiTrackForm')?.addEventListener('submit', async (e) 
 
             const mp3_url = data.publicUrl;
 
-            // 3. Save to database
+            // 3. Save to database           
+            const trackData = {
+                title: track.title,
+                description: track.description,
+                language: track.language,
+                category_id: track.category_id,
+                spotify_id: track.spotify_id,
+                mp3_url: mp3_url,
+                license: track.license,
+                is_private: track.is_private
+            };
+            
+            // Generate token if private
+            if (track.is_private) {
+                // Use crypto.randomUUID() to generate a UUID
+                trackData.private_token = crypto.randomUUID();
+                console.log('Generated private_token:', trackData.private_token);
+            }
+                        
             const { data: insertedTrack, error: dbError } = await supabaseClient
                 .from("tracks")
-                .insert([{
-                    title: track.title,
-                    description: track.description,
-                    language: track.language,
-                    category_id: track.category_id,
-                    spotify_id: track.spotify_id,
-                    mp3_url: mp3_url,
-                    license: track.license
-                }])
+                .insert([trackData])
                 .select()
                 .single();
 
             if (dbError) {
                 throw new Error(`Failed to save track "${track.title}": ${dbError.message}`);
+            }
+                        
+            // Store track info if private (for showing links later)
+            if (track.is_private && insertedTrack) {
+                track.insertedTrack = insertedTrack;
             }
             
             // 4. Add tags to track
@@ -251,24 +280,191 @@ document.getElementById('multiTrackForm')?.addEventListener('submit', async (e) 
     // Success!
     progressStatus.textContent = `✅ Success! All ${totalTracks} tracks uploaded successfully!`;
     
-    alert(`Successfully uploaded ${totalTracks} track(s)!`);
-    
-    // Reset form
-    setTimeout(() => {
-        form.reset();
-        document.getElementById('tracksContainer').innerHTML = '';
-        trackCounter = 0;
-        addTrackItem();
-        progressContainer.classList.remove('active');
-        progressBar.style.width = '0%';
-        progressBar.textContent = '0%';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Upload All Tracks';
+    // Show private links if tracks were private
+    if (isPrivate) {
+        showPrivateTrackLinks(tracks);
+    } else {
+        alert(`Successfully uploaded ${totalTracks} track(s)!`);
         
-        // Reload categories
-        loadCategories();
-    }, 2000);
+        // Reset form
+        setTimeout(() => {
+            resetForm(form, progressContainer, progressBar, submitBtn);
+        }, 2000);
+    }
 });
+
+// Show private track links after upload
+function showPrivateTrackLinks(tracks) {
+    const privateTracks = tracks.filter(t => t.is_private && t.insertedTrack);
+    
+    if (privateTracks.length === 0) return;
+    
+    // Create modal with links and QR codes
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 20px;
+        overflow-y: auto;
+    `;
+    
+    const content = document.createElement('div');
+    content.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 800px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+    `;
+    
+    let html = `
+        <h2 style="margin-top: 0; color: #4f46e5;">🔒 Private Track Links</h2>
+        <p style="color: #aaa; margin-bottom: 30px;">Save these links to share your private tracks. They won't appear in public listings.</p>
+    `;
+    
+    privateTracks.forEach((track, index) => {
+        const token = track.insertedTrack.private_token;
+        // Get base URL (we're in /admin/ folder, so go up one level)
+        const currentUrl = window.location.href;
+        const adminIndex = currentUrl.lastIndexOf('/admin/');
+        const baseUrl = currentUrl.substring(0, adminIndex + 1);
+        const url = `${baseUrl}private-track.html?token=${token}`;
+        const qrId = `qr-${index}`;
+        
+        html += `
+            <div style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px solid #e9ecef;">
+                <h3 style="margin-top: 0; color: #333;">${track.title}</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" value="${url}" readonly 
+                        style="flex: 1; font-family: monospace; font-size: 12px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
+                        id="link-${index}" />
+                    <button onclick="copyLink('${url}', ${index})" class="button secondary" id="copy-btn-${index}">Copy</button>
+                </div>
+                <div style="text-align: center;">
+                    <div id="${qrId}" style="display: inline-block; padding: 10px; background: white; border-radius: 8px;"></div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
+        <button onclick="closePrivateLinksModal()" class="button primary" style="width: 100%; margin-top: 20px;">
+            Done - Close and Reset Form
+        </button>
+    `;
+    
+    content.innerHTML = html;
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    
+    // Generate QR codes
+    privateTracks.forEach((track, index) => {
+        const token = track.insertedTrack.private_token;
+        // Get base URL (we're in /admin/ folder, so go up one level)
+        const currentUrl = window.location.href;
+        const adminIndex = currentUrl.lastIndexOf('/admin/');
+        const baseUrl = currentUrl.substring(0, adminIndex + 1);
+        const url = `${baseUrl}private-track.html?token=${token}`;
+        const qrId = `qr-${index}`;
+        
+        new QRCode(document.getElementById(qrId), {
+            text: url,
+            width: 150,
+            height: 150,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    });
+    
+    // Make functions global for onclick handlers
+    window.copyLink = async (url, index) => {
+        try {
+            await navigator.clipboard.writeText(url);
+            const btn = document.getElementById(`copy-btn-${index}`);
+            btn.textContent = '✓ Copied!';
+            btn.style.background = '#10b981';
+            setTimeout(() => {
+                btn.textContent = 'Copy';
+                btn.style.background = '';
+            }, 2000);
+        } catch (err) {
+            document.getElementById(`link-${index}`).select();
+            document.execCommand('copy');
+        }
+    };
+    
+    window.closePrivateLinksModal = () => {
+        document.body.removeChild(modal);
+        const form = document.getElementById('multiTrackForm');
+        const progressContainer = document.getElementById('uploadProgress');
+        const progressBar = document.getElementById('progressBarFill');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        resetForm(form, progressContainer, progressBar, submitBtn);
+    };
+}
+
+// Helper to reset form
+function resetForm(form, progressContainer, progressBar, submitBtn) {
+    form.reset();
+    document.getElementById('tracksContainer').innerHTML = '';
+    trackCounter = 0;
+    addTrackItem();
+    progressContainer.classList.remove('active');
+    progressBar.style.width = '0%';
+    progressBar.textContent = '0%';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Upload All Tracks';
+    
+    // Reload categories
+    loadCategories();
+}
+
+// Load categories using CategoryModel
+async function loadCategories() {
+    try {
+        const categories = await categoryModel.getAll();
+        
+        const select = document.getElementById('categorySelect');
+        
+        // Clear existing options except first two (placeholder and "new category")
+        while (select.options.length > 2) {
+            select.remove(2);
+        }
+        
+        // Add categories from database
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
+
+// Create category using CategoryModel
+async function createCategory(name) {
+    try {
+        const category = await categoryModel.create(name);
+        return category;
+    } catch (error) {
+        console.error('Error creating category:', error);
+        alert('Failed to create category: ' + error.message);
+        return null;
+    }
+}
 
 // ============================================
 // Tag Autocomplete Functionality

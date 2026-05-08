@@ -53,13 +53,14 @@ class TagModel {
                     };
                 }
                 
-                // Filter by language
+                // Filter by language and exclude private tracks
                 const trackIds = trackTags.map(tt => tt.track_id);
                 const { count } = await this.supabase
                     .from('tracks')
                     .select('*', { count: 'exact', head: true })
                     .in('id', trackIds)
-                    .eq('language', currentLang);
+                    .eq('language', currentLang)
+                    .eq('is_private', false); // Exclude private tracks
                 
                 return {
                     ...tag,

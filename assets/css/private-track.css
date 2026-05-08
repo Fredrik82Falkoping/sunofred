@@ -1,0 +1,216 @@
+/* Private Track Page Styles */
+
+.private-track-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.private-track-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.private-track-header h1 {
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.private-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.track-content {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.track-title {
+    font-size: 28px;
+    color: var(--text-primary);
+    margin-bottom: 15px;
+}
+
+.track-description {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 25px;
+}
+
+.track-player {
+    width: 100%;
+    margin-bottom: 25px;
+}
+
+/* Action Buttons (Spotify and Edit) */
+.track-actions-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.action-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.spotify-button {
+    background-color: #1ED760;
+    color: #000;
+}
+
+.spotify-button:hover {
+    background-color: #1fdf64;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(30, 215, 96, 0.3);
+}
+
+.edit-button {
+    background-color: #6366f1;
+    color: white;
+}
+
+.edit-button:hover {
+    background-color: #4f46e5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.share-section {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid var(--border-color);
+}
+
+.share-section h3 {
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.qr-code-container {
+    display: flex;
+    justify-content: center;
+    margin: 30px 0;
+}
+
+#qrcode {
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.share-link-container {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.share-link {
+    flex: 1;
+    padding: 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    outline: none;
+}
+
+.copy-button {
+    padding: 10px 20px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.copy-button:hover {
+    background: var(--primary-hover);
+}
+
+.copy-button.copied {
+    background: #10b981;
+}
+
+.error-message {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+}
+
+.error-message h2 {
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.loading {
+    text-align: center;
+    padding: 60px;
+    color: var(--text-secondary);
+}
+
+.spotify-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background-color: #1ED760;
+    color: #000;
+    font-weight: 600;
+    border-radius: 24px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background-color 0.2s;
+    margin-top: 15px;
+}
+
+.spotify-link:hover {
+    background-color: #1fdf64;
+}
+
+.tag-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+.tags-container {
+    margin-bottom: 20px;
+}
+
+#privateTrackSection #privateLink {
+    color: #000;
+}

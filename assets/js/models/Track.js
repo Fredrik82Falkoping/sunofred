@@ -44,6 +44,7 @@ class TrackModel {
             `)
             .eq('category_id', categoryId)
             .eq('language', currentLang)
+            .eq('is_private', false) // Exclude private tracks
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -85,6 +86,82 @@ class TrackModel {
     }
 
     /**
+     * Get a track by its private token
+     * @param {string} token - Private token
+     * @returns {Promise<Object>} Track with category and tag data
+     */
+    async getByPrivateToken(token) {
+        const { data, error } = await this.supabase
+            .from('tracks')
+            .select(`
+                *,
+                categories:category_id(
+                    id,
+                    image_url,
+                    category_translations(name, locale)
+                ),
+                track_tags(tags(id, name, color))
+            `)
+            .eq('private_token', token)
+            .eq('is_private', true)
+            .single();
+
+        if (error) {
+            console.error('Error fetching private track:', error);
+            throw error;
+        }
+
+        return this._flattenTrack(data);
+    }
+
+    /**
+     * Generate a new private token for a track
+     * @param {string} trackId - Track ID
+     * @returns {Promise<string>} New private token
+     */
+    async generatePrivateToken(trackId) {
+        // Generate a new UUID
+        const { data, error } = await this.supabase
+            .rpc('gen_random_uuid');
+
+        if (error) {
+            console.error('Error generating token:', error);
+            throw error;
+        }
+
+        const newToken = data;
+
+        // Update track with new token
+        await this.update(trackId, { 
+            private_token: newToken,
+            is_private: true 
+        });
+
+        return newToken;
+    }
+
+    /**
+     * Get the private link URL for a track
+     * @param {string} token - Private token
+     * @returns {string} Full URL to private track page
+     */
+    getPrivateTrackUrl(token) {
+        // Get the base URL by removing everything after the last '/' from current URL
+        // This works for both local (file:///) and production (https://...)
+        const currentUrl = window.location.href;
+        const lastSlash = currentUrl.lastIndexOf('/');
+        const baseUrl = currentUrl.substring(0, lastSlash + 1);
+        
+        // If we're in admin folder, go up one level
+        if (baseUrl.includes('/admin/')) {
+            const adminIndex = baseUrl.lastIndexOf('/admin/');
+            return baseUrl.substring(0, adminIndex + 1) + 'private-track.html?token=' + token;
+        }
+        
+        return baseUrl + 'private-track.html?token=' + token;
+    }
+
+    /**
      * Get most popular tracks
      * @param {number} limit - Number of tracks to fetch
      * @returns {Promise<Array>} Array of tracks sorted by listeners then playcount
@@ -110,6 +187,7 @@ class TrackModel {
                     tags(id, name, color)
                 )
             `)
+            .eq('is_private', false) // Exclude private tracks
             .not('listeners', 'is', null)
             .order('listeners', { ascending: false })
             .order('playcount', { ascending: false })
@@ -138,7 +216,9 @@ class TrackModel {
                 category_id: trackData.category_id,
                 spotify_id: trackData.spotify_id || null,
                 mp3_url: trackData.mp3_url,
-                license: trackData.license || false
+                license: trackData.license || false,
+                is_private: trackData.is_private || false,
+                private_token: trackData.is_private ? trackData.private_token || null : null
             }])
             .select()
             .single();
@@ -177,14 +257,53 @@ class TrackModel {
      * @param {string} trackId - Track ID
      */
     async delete(trackId) {
-        const { error } = await this.supabase
+        // First, get the track to find the MP3 file
+        const { data: track, error: fetchError } = await this.supabase
+            .from('tracks')
+            .select('mp3_url')
+            .eq('id', trackId)
+            .single();
+
+        if (fetchError) {
+            console.error('Error fetching track for deletion:', fetchError);
+            throw fetchError;
+        }
+
+        // Delete from database first
+        const { error: dbError } = await this.supabase
             .from('tracks')
             .delete()
             .eq('id', trackId);
 
-        if (error) {
-            console.error('Error deleting track:', error);
-            throw error;
+        if (dbError) {
+            console.error('Error deleting track from database:', dbError);
+            throw dbError;
+        }
+
+        // Then delete the MP3 file from storage if it exists
+        if (track?.mp3_url) {
+            try {
+                // Extract filename from URL
+                // URL format: https://ongcmxiqyoeewcwmkndr.supabase.co/storage/v1/object/public/tracks/FILENAME
+                const url = new URL(track.mp3_url);
+                const pathParts = url.pathname.split('/');
+                const filename = pathParts[pathParts.length - 1];
+
+                if (filename) {
+                    const { error: storageError } = await this.supabase
+                        .storage
+                        .from('tracks')
+                        .remove([filename]);
+
+                    if (storageError) {
+                        console.error('Error deleting file from storage:', storageError);
+                        // Don't throw - track is already deleted from DB
+                    }
+                }
+            } catch (err) {
+                console.error('Error parsing MP3 URL or deleting file:', err);
+                // Don't throw - track is already deleted from DB
+            }
         }
     }
 

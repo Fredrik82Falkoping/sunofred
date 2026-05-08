@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Track | Sun of Red</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/private-track.css">
+    <link rel="icon" href="favicon.ico" sizes="any">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand">
+            <span class="eyebrow">Sun of Red</span>
+            <h1><a href="index.html">Sun of Red</a></h1>
+        </div>
+        <nav class="site-nav">
+            <a href="browse.html">Explore</a>
+            <a href="index.html#about">About</a>
+        </nav>
+    </header>
+
+    <main class="private-track-container">
+        <div class="private-track-header">
+            <span class="private-badge">🔒 Private Track</span>
+        </div>
+
+        <div id="loadingState" class="loading">
+            <p>Loading private track...</p>
+        </div>
+
+        <div id="errorState" class="error-message" style="display: none;">
+            <h2>Track Not Found</h2>
+            <p>This private track link is invalid or has expired.</p>
+            <a href="index.html" style="color: var(--primary-color);">Go to homepage</a>
+        </div>
+
+        <div id="trackContent" class="track-content" style="display: none;">
+            <div id="tagsContainer" class="tags-container"></div>
+            
+            <h2 class="track-title" id="trackTitle"></h2>
+            <p class="track-description" id="trackDescription"></p>
+            
+            <audio controls class="track-player" id="trackPlayer">
+                <source id="trackSource" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+
+            <div id="spotifyLinkContainer"></div>
+
+            <div class="share-section">
+                <h3>Share This Track</h3>
+                <p style="text-align: center; color: var(--text-secondary); margin-bottom: 20px;">
+                    Scan the QR code or copy the link below to share this private track
+                </p>
+                
+                <div class="qr-code-container">
+                    <div id="qrcode"></div>
+                </div>
+
+                <div class="share-link-container">
+                    <input type="text" class="share-link" id="shareLink" readonly>
+                    <button class="copy-button" id="copyButton">Copy Link</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/supabase.js"></script>
+    <script src="assets/js/private-track.js"></script>
+</body>
+</html>

@@ -35,7 +35,7 @@ async function getAvailableLanguages() {
 
         // Get unique languages
         const uniqueLanguages = [...new Set(data.map(track => track.language))];
-        console.log('Available languages from DB:', uniqueLanguages);
+        // console.log('Available languages from DB:', uniqueLanguages);
         return uniqueLanguages.filter(Boolean).sort();
     } catch (err) {
         console.error('Error:', err);
@@ -210,17 +210,16 @@ function getLanguageLabel(code) {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Language filter: DOMContentLoaded');
     // Wait a bit for Supabase client to be loaded
     let attempts = 0;
     const maxAttempts = 10; // Max 1 second
     
     const initLanguageSelector = () => {
         attempts++;
-        console.log(`Attempt ${attempts}: Supabase client available?`, !!window.supabaseClient);
+        // console.log(`Attempt ${attempts}: Supabase client available?`, !!window.supabaseClient);
         
         if (window.supabaseClient) {
-            console.log('Supabase client found, initializing language selector');
+            // console.log('Supabase client found, initializing language selector');
             addLanguageSelector();
         } else if (attempts < maxAttempts) {
             // Retry after a short delay

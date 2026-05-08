@@ -6,7 +6,8 @@
     <title>Upload Tracks | Sun of Red</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/multi-upload.css">
-    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="stylesheet" href="../assets/css/private-track-modal.css">
+    <link rel="icon" href="../favicon.ico" sizes="any">
 </head>
 <body>
     <header class="site-header">
@@ -68,6 +69,14 @@
                             </label>
                         </div>
 
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="is_private" id="isPrivate" />
+                                <span>🔒 Make all tracks private (only accessible via direct link)</span>
+                            </label>
+                            <small style="color: #aaa; font-size: 12px; display: block; margin-top: 8px;">Private tracks won't appear in public listings. You'll get unique links for each track after upload.</small>
+                        </div>
+
                         <div class="form-group">
                             <label for="sharedTags">Tags (comma-separated)</label>
                             <div class="tag-input-container">
@@ -80,7 +89,7 @@
                                 />
                                 <div id="sharedTagSuggestions" class="tag-suggestions"></div>
                             </div>
-                            <small style="color: #666; font-size: 12px;">These tags will be added to all tracks. Separate with commas.</small>
+                            <small style="color: #aaa; font-size: 12px;">These tags will be added to all tracks. Separate with commas.</small>
                         </div>
                     </div>
 
@@ -113,11 +122,16 @@
         <p>© 2026 Sun of Red • Independent artist project</p>
     </footer>
 
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/config.js"></script>
     <script src="../assets/js/language-filter.js"></script>
     <script src="../assets/js/supabase.js"></script>
     <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/models/Category.js"></script>
+    <script src="../assets/js/models/Tag.js"></script>
     <script src="../assets/js/multi-upload.js"></script>
 </body>
 </html>

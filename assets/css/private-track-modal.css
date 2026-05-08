@@ -1,0 +1,81 @@
+/* Private Track Links Modal */
+
+.private-track-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.private-track-modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.private-track-modal h2 {
+    margin-top: 0;
+    color: #4f46e5;
+}
+
+.private-track-modal-intro {
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.private-track-item {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+}
+
+.private-track-item h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+.private-link-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.private-link-input {
+    flex: 1;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+}
+
+.private-qr-container {
+    text-align: center;
+}
+
+.private-qr-code {
+    display: inline-block;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+}
+
+.modal-close-button {
+    width: 100%;
+    margin-top: 20px;
+}

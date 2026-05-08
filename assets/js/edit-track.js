@@ -49,6 +49,7 @@ function populateForm(track) {
     document.getElementById('language').value = track.language || '';
     document.getElementById('spotify_id').value = track.spotify_id || '';
     document.getElementById('license').checked = track.license || false;
+    document.getElementById('isPrivate').checked = track.is_private || false;
 
     // Set current MP3
     if (track.mp3_url) {
@@ -58,6 +59,20 @@ function populateForm(track) {
     // Extract tags using flattened tags array from model
     const tags = track.tags?.map(tag => tag.name).join(', ') || '';
     document.getElementById('tags').value = tags;
+
+    // Show private link section if track is private
+    if (track.is_private && track.private_token) {
+        showPrivateTrackSection(track.private_token);
+    }
+
+    // Add event listener for private checkbox toggle
+    document.getElementById('isPrivate').addEventListener('change', function(e) {
+        if (e.target.checked && track.private_token) {
+            showPrivateTrackSection(track.private_token);
+        } else if (!e.target.checked) {
+            document.getElementById('privateTrackSection').style.display = 'none';
+        }
+    });
 }
 
 async function loadCategories() {
@@ -81,6 +96,57 @@ async function loadCategories() {
         }
         select.appendChild(option);
     });
+}
+
+// Show private track section with link and QR code
+function showPrivateTrackSection(token) {
+    const section = document.getElementById('privateTrackSection');
+    const linkInput = document.getElementById('privateLink');
+    const qrContainer = document.getElementById('privateQRCode');
+    
+    // Generate URL
+    const privateUrl = trackModel.getPrivateTrackUrl(token);
+    linkInput.value = privateUrl;
+    
+    // Show section
+    section.style.display = 'block';
+    
+    // Clear previous QR code
+    qrContainer.innerHTML = '';
+    
+    // Generate QR code
+    new QRCode(qrContainer, {
+        text: privateUrl,
+        width: 150,
+        height: 150,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+    });
+    
+    // Add copy button handler
+    document.getElementById('copyPrivateLink').onclick = async () => {
+        try {
+            await navigator.clipboard.writeText(privateUrl);
+            const btn = document.getElementById('copyPrivateLink');
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Copied!';
+            btn.style.background = '#10b981';            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '';
+            }, 2000);
+        } catch (err) {
+            // Fallback
+            linkInput.select();
+            document.execCommand('copy');
+        }
+    };
+    
+    // Add open link button handler
+    document.getElementById('openPrivateLink').onclick = () => {
+        window.open(privateUrl, '_blank');
+    };
 }
 
 // Category handling
@@ -195,7 +261,8 @@ document.getElementById('trackForm')?.addEventListener('submit', async (e) => {
             language: formData.get('language'),
             category_id: categoryId,
             spotify_id: formData.get('spotify_id') || null,
-            license: formData.get('license') === 'on'
+            license: formData.get('license') === 'on',
+            is_private: formData.get('is_private') === 'on'
         };
 
         // Handle MP3 file if provided
@@ -209,13 +276,26 @@ document.getElementById('trackForm')?.addEventListener('submit', async (e) => {
         // Update track using model
         await trackModel.update(trackId, trackData);
 
+        // If track was just set to private and doesn't have a token, generate one
+        if (trackData.is_private && !currentTrack.private_token) {
+            const newToken = await trackModel.generatePrivateToken(trackId);
+            showPrivateTrackSection(newToken);
+            // Update current track with new token
+            currentTrack.private_token = newToken;
+            currentTrack.is_private = true;
+        }
+
         // Handle tags - always update them (even if empty)
         const tagsString = formData.get('tags') || '';
         const tagNames = tagModel.parseTagString(tagsString);
         await tagModel.updateForTrack(trackId, tagNames);
 
         alert('Track updated successfully!');
-        window.history.back();
+        
+        // Don't go back if track is private - user might want to see/copy the link
+        if (!trackData.is_private) {
+            window.history.back();
+        }
     } catch (err) {
         console.error('Error updating track:', err);
         alert('Error updating track: ' + err.message);
