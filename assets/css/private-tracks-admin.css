@@ -1,0 +1,177 @@
+/* Private Tracks Admin Page Styles */
+
+.private-tracks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+}
+
+@media (max-width: 768px) {
+    .private-tracks-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.private-track-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 24px;
+    transition: all 0.3s ease;
+}
+
+.private-track-card:hover {
+    border-color: rgba(99, 102, 241, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.private-track-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.private-track-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #f7f7f7;
+    margin: 0 0 8px 0;
+}
+
+.private-track-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.category-badge,
+.language-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.category-badge {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.language-badge {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.private-track-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.private-track-description {
+    color: #d1d1df;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.private-track-qr {
+    display: flex;
+    justify-content: center;
+    margin: 24px 0;
+}
+
+.qr-code {
+    padding: 12px;
+    background: white;
+    border-radius: 12px;
+    display: inline-block;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.private-track-link {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.private-link-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+    color: #f7f7f7;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+}
+
+.private-link-input:focus {
+    outline: none;
+    border-color: rgba(99, 102, 241, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.track-player {
+    width: 100%;
+    margin-top: 16px;
+}
+
+/* Button overrides for this page */
+.private-track-card .action-button {
+    white-space: nowrap;
+}
+
+.private-track-card .action-button.primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+}
+
+.private-track-card .action-button.primary:hover {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+}
+
+.private-track-card .action-button.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f7f7f7;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.private-track-card .action-button.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Loading and error states */
+.loading,
+.error,
+.no-results {
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 1.1rem;
+    color: #d1d1df;
+}
+
+.error {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.no-results {
+    color: #93c5fd;
+}

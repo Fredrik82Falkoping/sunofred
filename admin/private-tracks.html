@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Tracks | Sun of Red</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/browse.css">
+    <link rel="stylesheet" href="../assets/css/private-tracks-admin.css">
+    <link rel="icon" href="../favicon.ico" sizes="any">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand">
+            <span class="eyebrow">Sun of Red</span>
+            <h1>Sun of Red</h1>
+            <p>Indie pop exploring reason, history and compassion.</p>
+        </div>
+        <nav class="site-nav">
+            <a href="../index.html">Home</a>
+            <a href="../browse.html">Explore</a>
+            <a href="multi-upload.html">Upload</a>
+            <a href="edit-categories.html">Edit Categories</a>
+            <a href="private-tracks.html" style="font-weight: 600;">Private Tracks</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="section-intro">
+                <span>Admin</span>
+                <h2>🔒 Private Tracks</h2>
+                <p>Manage all your private tracks with direct links and QR codes.</p>
+            </div>
+
+            <div id="loadingMessage" class="loading">Loading private tracks...</div>
+            <div id="errorMessage" class="error" style="display: none;"></div>
+            <div id="noTracksMessage" class="no-results" style="display: none;">No private tracks found.</div>
+
+            <div id="privateTracksContainer" class="private-tracks-grid" style="display: none;">
+                <!-- Private tracks will be loaded here -->
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>&copy; 2026 Sun of Red. All rights reserved.</p>
+    </footer>
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/supabase.js"></script>
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/models/Track.js"></script>
+    <script src="../assets/js/private-tracks-admin.js"></script>
+</body>
+</html>
