@@ -20,7 +20,6 @@ class TagModel {
      * @returns {Promise<Array>} Array of tags with trackCount property
      */
     async getAllWithTrackCounts() {
-        const currentLang = this.getCurrentLanguage();
 
         // Get all tags
         const { data: tags, error } = await this.supabase
@@ -37,7 +36,7 @@ class TagModel {
             return [];
         }
 
-        // Get track counts for each tag
+        // Get track counts for each tag (without language filter)
         const tagsWithCounts = await Promise.all(
             tags.map(async (tag) => {
                 // Get tracks with this tag
@@ -45,7 +44,7 @@ class TagModel {
                     .from('track_tags')
                     .select('track_id')
                     .eq('tag_id', tag.id);
-                
+                                
                 if (!trackTags || trackTags.length === 0) {
                     return {
                         ...tag,
@@ -53,14 +52,14 @@ class TagModel {
                     };
                 }
                 
-                // Filter by language and exclude private tracks
+                // Count non-private tracks (no language filter)
                 const trackIds = trackTags.map(tt => tt.track_id);
-                const { count } = await this.supabase
+                const { count, error: countError } = await this.supabase
                     .from('tracks')
                     .select('*', { count: 'exact', head: true })
                     .in('id', trackIds)
-                    .eq('language', currentLang)
-                    .eq('is_private', false); // Exclude private tracks
+                    .eq('is_private', false);
+                
                 
                 return {
                     ...tag,

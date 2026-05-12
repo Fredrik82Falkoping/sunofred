@@ -159,6 +159,154 @@ class TrackModel {
      * @returns {Promise<Array>} Array of tracks sorted by listeners then playcount
      */
     async getPopular(limit = 3) {
+        const { data, error } = await this.supabase
+            .from('tracks')
+            .select(`
+                *,
+                categories:category_id(
+                    id,
+                    image_url,
+                    category_translations(
+                        name,
+                        body,
+                        slug,
+                        locale
+                    )
+                ),
+                track_tags(
+                    tags(id, name, color)
+                )
+            `)
+            .eq('is_private', false) // Exclude private tracks
+            .order('playcount', { ascending: false })
+            .limit(limit);
+
+        if (error) {
+            console.error('Error fetching popular tracks:', error);
+            throw error;
+        }
+
+        return data || [];
+    }
+
+    /**
+     * Get a random public track (for suggestions)
+     * @param {number} limit - Number of tracks to fetch from
+     * @returns {Promise<Object>} Random track
+     */
+    async getRandomPublic(limit = 20) {
+        const { data, error } = await this.supabase
+            .from('tracks')
+            .select(`
+                *,
+                categories:category_id(
+                    id,
+                    category_translations(name, locale)
+                )
+            `)
+            .eq('is_private', false)
+            .limit(limit);
+
+        if (error) {
+            console.error('Error fetching random tracks:', error);
+            throw error;
+        }
+
+        if (!data || data.length === 0) return null;
+
+        // Pick a random track
+        return data[Math.floor(Math.random() * data.length)];
+    }
+
+    /**
+     * Get all tracks for a specific category (with optional language filter)
+     * @param {string} categoryId - Category ID
+     * @param {string} language - Optional language filter ('all' for no filter)
+     * @returns {Promise<Array>} Array of tracks
+     */
+    async getByCategoryAllLanguages(categoryId, language = 'all') {
+        let query = this.supabase
+            .from('tracks')
+            .select(`
+                *,
+                categories:category_id(
+                    id,
+                    image_url,
+                    category_translations(name, body, locale)
+                ),
+                track_tags(
+                    tags(id, name, color)
+                )
+            `)
+            .eq('category_id', categoryId)
+            .eq('is_private', false)
+            .order('created_at', { ascending: false });
+
+        // Only filter by language if not "all"
+        if (language !== 'all') {
+            query = query.eq('language', language);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('Error fetching tracks:', error);
+            throw error;
+        }
+
+        return data || [];
+    }
+
+    /**
+     * Get tracks by tag ID
+     * @param {string} tagId - Tag ID
+     * @returns {Promise<Array>} Array of tracks
+     */
+    async getByTag(tagId) {
+        // First get all track IDs for this tag
+        const { data: trackTags, error: tagError } = await this.supabase
+            .from('track_tags')
+            .select('track_id')
+            .eq('tag_id', tagId);
+
+        if (tagError) {
+            console.error('Error fetching track tags:', tagError);
+            throw tagError;
+        }
+
+        if (!trackTags || trackTags.length === 0) {
+            return [];
+        }
+
+        const trackIds = trackTags.map(tt => tt.track_id);
+
+        // Then get the actual tracks (no language filter for tags)
+        const { data: tracks, error } = await this.supabase
+            .from('tracks')
+            .select(`
+                *,
+                categories:category_id(
+                    id,
+                    category_translations(name, locale)
+                )
+            `)
+            .in('id', trackIds)
+            .eq('is_private', false);
+
+        if (error) {
+            console.error('Error fetching tracks by tag:', error);
+            throw error;
+        }
+
+        return tracks || [];
+    }
+
+    /**
+     * Get most popular tracks (old method name for compatibility)
+     * @param {number} limit - Number of tracks to fetch
+     * @returns {Promise<Array>} Array of tracks sorted by listeners then playcount
+     */
+    async getPopularOld(limit = 3) {
         const currentLang = this.getCurrentLanguage();
         
         const { data, error } = await this.supabase

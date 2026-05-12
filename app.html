@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sun of Red</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/browse.css">
+    <link rel="stylesheet" href="assets/css/player.css">
+    <link rel="icon" href="favicon.ico" sizes="any">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand">
+            <span class="eyebrow">Sun of Red</span>
+            <h1>Sun of Red</h1>
+            <p>Indie pop exploring reason, history and compassion.</p>
+        </div>
+        <nav class="site-nav">
+            <a href="#/" data-route="/">Home</a>
+            <a href="#/browse" data-route="/browse">Explore</a>
+            <a href="login.html">Admin</a>
+        </nav>
+    </header>
+
+    <!-- Dynamic content area -->
+    <main id="app-content">
+        <div class="loading">Loading...</div>
+    </main>
+
+    <!-- Persistent audio player -->
+    <div id="audioPlayer" class="audio-player">
+        <div class="player-content">
+            <div class="player-track-info">
+                <div class="player-artwork">
+                    <img id="playerArtwork" src="" alt="" />
+                    <div class="player-artwork-placeholder">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18V5l12-2v13M9 18c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3zm12-5c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="player-text">
+                    <div class="player-title" id="playerTitle">No track loaded</div>
+                    <div class="player-category" id="playerCategory">Select a track to play</div>
+                </div>
+            </div>
+
+            <div class="player-controls">
+                <button id="playerPrev" class="player-btn" title="Previous track" disabled>
+                    <span class="icon-container" data-icon="previous"></span>
+                </button>
+                <button id="playerPlay" class="player-btn player-btn-play" title="Play" disabled>
+                    <span class="play-icon icon-container" data-icon="play"></span>
+                    <span class="pause-icon icon-container" data-icon="pause" style="display: none;"></span>
+                </button>
+                <button id="playerNext" class="player-btn" title="Next track" disabled>
+                    <span class="icon-container" data-icon="next"></span>
+                </button>
+            </div>
+
+            <div class="player-progress">
+                <span id="playerCurrentTime">0:00</span>
+                <div class="progress-bar">
+                    <input type="range" id="playerSeek" min="0" max="100" value="0" step="0.1">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span id="playerDuration">0:00</span>
+            </div>
+
+            <div class="player-right">
+                <button id="playerContinue" class="player-btn player-btn-mode active" title="Continue to next track: On">
+                    <span class="icon-container" data-icon="continue"></span>
+                </button>
+                <button id="playerShuffle" class="player-btn player-btn-mode" title="Shuffle">
+                    <span class="icon-container" data-icon="shuffle"></span>
+                </button>
+                <button id="playerRepeat" class="player-btn player-btn-mode" title="Repeat off">
+                    <span class="icon-container" data-icon="repeat"></span>
+                </button>
+                <button id="playerVolume" class="player-btn" title="Volume">
+                    <span class="volume-icon icon-container" data-icon="volume"></span>
+                </button>
+                <input type="range" id="playerVolumeSlider" class="volume-slider" min="0" max="100" value="80">
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <p>&copy; 2026 Sun of Red. All rights reserved.</p>
+    </footer>
+
+    <!-- Core scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/supabase.js"></script>
+    <script src="assets/js/language-filter.js"></script>
+    <script src="assets/js/models/Track.js"></script>
+    <script src="assets/js/models/Category.js"></script>
+    <script src="assets/js/models/Tag.js"></script>
+    
+    <!-- SPA scripts -->
+    <script src="assets/js/view-loader.js"></script>
+    <script src="assets/js/player.js"></script>
+    <script src="assets/js/router.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
