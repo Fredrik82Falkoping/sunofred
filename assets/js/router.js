@@ -255,7 +255,7 @@ class Router {
      */
     async loadTags() {
         try {
-            const tags = await this.tagModel.getAllWithTrackCounts();        
+            const tags = await this.tagModel.getAllWithTrackCounts();
             
             const container = document.getElementById('tagsContainer');
             

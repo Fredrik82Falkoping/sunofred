@@ -89,19 +89,14 @@ class CategoryModel {
             throw error;
         }
 
-        console.log('Raw category data:', data);
-        console.log('Preferred locale:', preferredLocale);
-
         // Process each category to get one entry with preferred translation
         const categories = (data || [])
             .filter(cat => cat.category_translations && cat.category_translations.length > 0)
             .map(cat => {
-                console.log('Processing category:', cat.id, 'translations:', cat.category_translations);
                 
                 // Try to find translation in preferred language, fallback to first available
                 let translation = cat.category_translations.find(t => t.locale === preferredLocale);
                 if (!translation) {
-                    console.log('No translation found for', preferredLocale, 'using fallback');
                     translation = cat.category_translations[0];
                 }
 
@@ -117,8 +112,6 @@ class CategoryModel {
                 };
             })
             .sort((a, b) => a.name.localeCompare(b.name));
-
-        console.log('Processed categories:', categories);
 
         return categories;
     }
@@ -169,7 +162,7 @@ class CategoryModel {
      * @returns {Promise<Array>} Categories with trackCount property
      */
     async getAllWithTrackCounts() {
-        const currentLang = this.getCurrentLanguage();
+        const currentLang = this.getCurrentLanguage();        
         const categories = await this.getAll();
 
         // Get track counts for each category (excluding private tracks)
@@ -188,7 +181,7 @@ class CategoryModel {
                 }
                 
                 const { count, error } = await query;
-                
+                                
                 return {
                     ...category,
                     trackCount: count || 0
