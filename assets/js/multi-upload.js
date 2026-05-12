@@ -57,7 +57,7 @@ function addTrackItem() {
         <div class="form-group">
             <label for="mp3_${trackCounter}">MP3 File *</label>
             <input type="file" name="mp3_${trackCounter}" id="mp3_${trackCounter}" accept="audio/mpeg" required />
-            <small style="color: #aaa; font-size: 12px;">The filename will auto-fill the title field</small>
+            <small class="text-muted">The filename will auto-fill the title field</small>
         </div>
     `;
     
@@ -337,7 +337,7 @@ function showPrivateTrackLinks(tracks) {
     
     let html = `
         <h2 style="margin-top: 0; color: #4f46e5;">🔒 Private Track Links</h2>
-        <p style="color: #aaa; margin-bottom: 30px;">Save these links to share your private tracks. They won't appear in public listings.</p>
+        <p class="text-muted">Save these links to share your private tracks. They won't appear in public listings.</p>
     `;
     
     privateTracks.forEach((track, index) => {

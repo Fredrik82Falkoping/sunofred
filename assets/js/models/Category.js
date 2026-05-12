@@ -387,6 +387,26 @@ class CategoryModel {
     }
 
     /**
+     * Get all translations for a category
+     * @param {string} categoryId - Category ID
+     * @returns {Promise<Array>} Array of all translations with their locales
+     */
+    async getTranslations(categoryId) {
+        const { data, error } = await this.supabase
+            .from('category_translations')
+            .select('id, locale, name, slug, body')
+            .eq('category_id', categoryId)
+            .order('locale');
+
+        if (error) {
+            console.error('Error fetching translations:', error);
+            throw error;
+        }
+
+        return data || [];
+    }
+
+    /**
      * Delete a category translation
      * If it's the last translation, also delete the category
      * @param {string} categoryId - Category ID

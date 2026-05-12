@@ -133,8 +133,9 @@ async function openEditModal(categoryId) {
         // Get current language
         const currentLang = window.languageFilter?.getCurrentLanguage() || 'en';
         
-        // Build query
-        let query = supabaseClient
+        // ALWAYS fetch ALL translations for this category (no locale filter)
+        // This ensures we have all data needed for copying to other languages
+        const { data: category, error } = await supabaseClient
             .from('categories')
             .select(`
                 id,
@@ -147,18 +148,12 @@ async function openEditModal(categoryId) {
                     locale
                 )
             `)
-            .eq('id', categoryId);
-        
-        // Only filter by locale if not "all"
-        if (currentLang !== 'all') {
-            query = query.eq('category_translations.locale', currentLang);
-        }
-        
-        const { data: category, error } = await query.single();
+            .eq('id', categoryId)
+            .single();
 
         if (error) throw error;
 
-        // Find translation for current language
+        // Find translation for current language (or fallback to first)
         const translation = category.category_translations?.find(
             t => t.locale === currentLang
         ) || category.category_translations?.[0];
@@ -354,24 +349,56 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
 });
 
 // Copy to language button handler
-document.getElementById('copyToLanguageBtn').addEventListener('click', () => {
+document.getElementById('copyToLanguageBtn').addEventListener('click', async () => {
+    const categoryId = document.getElementById('editCategoryId').value;
     const currentLocale = document.getElementById('editLocale').value;
     
-    // Update target locale options to exclude current language
-    const targetSelect = document.getElementById('targetLocale');
-    Array.from(targetSelect.options).forEach(option => {
-        if (option.value === currentLocale) {
-            option.disabled = true;
-        } else {
-            option.disabled = false;
-        }
-    });
-    
-    // Reset selection
-    targetSelect.value = '';
-    
-    // Show copy modal
-    document.getElementById('copyLanguageModal').classList.add('active');
+    try {
+        // Get all existing translations for this category
+        const translations = await categoryModel.getTranslations(categoryId);
+        const existingLocales = translations.map(t => t.locale);
+        
+        // Define all available languages
+        const allLanguages = [
+            { code: 'en', label: 'English', flag: '🇬🇧' },
+            { code: 'sv', label: 'Svenska', flag: '🇸🇪' },
+            { code: 'de', label: 'Deutsch', flag: '🇩🇪' }
+        ];
+        
+        // Build the language selector with status indicators
+        const targetSelect = document.getElementById('targetLocale');
+        targetSelect.innerHTML = '<option value="">Select language...</option>';
+        
+        allLanguages.forEach(lang => {
+            const option = document.createElement('option');
+            option.value = lang.code;
+            
+            const exists = existingLocales.includes(lang.code);
+            const isCurrent = lang.code === currentLocale;
+            
+            if (isCurrent) {
+                option.textContent = `${lang.flag} ${lang.label} (current)`;
+                option.disabled = true;
+            } else if (exists) {
+                // Find the translation to show its name
+                const translation = translations.find(t => t.locale === lang.code);
+                option.textContent = `${lang.flag} ${lang.label} ✓ (exists: "${translation.name}")`;
+                option.disabled = false; // Allow selection to overwrite
+                option.style.color = '#10b981';
+            } else {
+                option.textContent = `${lang.flag} ${lang.label}`;
+                option.disabled = false;
+            }
+            
+            targetSelect.appendChild(option);
+        });
+        
+        // Show copy modal
+        document.getElementById('copyLanguageModal').classList.add('active');
+    } catch (err) {
+        console.error('Error loading translations:', err);
+        alert('Error loading language information: ' + err.message);
+    }
 });
 
 // Close copy language modal
@@ -393,10 +420,29 @@ document.getElementById('copyLanguageForm').addEventListener('submit', async (e)
     }
 
     try {
+        // Check if translation already exists
+        const translations = await categoryModel.getTranslations(categoryId);
+        const existingTranslation = translations.find(t => t.locale === toLocale);
+        
+        if (existingTranslation) {
+            const languageNames = { en: 'English', sv: 'Swedish', de: 'German' };
+            const confirmed = confirm(
+                `A ${languageNames[toLocale]} translation already exists:\n\n"${existingTranslation.name}"\n\nDo you want to overwrite it with the current translation?`
+            );
+            
+            if (!confirmed) {
+                return;
+            }
+            
+            // Delete existing translation first
+            await categoryModel.deleteTranslation(categoryId, toLocale);
+        }
+        
+        // Copy to new language
         await categoryModel.copyToLanguage(categoryId, fromLocale, toLocale);
         
-        //Todo: More languages
-        alert(`Category copied to ${toLocale === 'en' ? 'English' : 'Swedish'} successfully!`);
+        const languageNames = { en: 'English', sv: 'Swedish', de: 'German' };
+        alert(`Category copied to ${languageNames[toLocale]} successfully!`);
         closeCopyLanguageModal();
         closeEditModal();
         loadCategories();

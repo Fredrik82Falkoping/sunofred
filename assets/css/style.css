@@ -13,6 +13,12 @@
     line-height: 1.6;
 }
 
+.text-muted {
+    color: #aaa;
+    margin-bottom: 20px;
+    font-size: 12px;
+}
+
 body {
     background: radial-gradient(circle at top, rgba(255, 70, 130, 0.16), transparent 35%),
                 radial-gradient(circle at bottom right, rgba(66, 135, 245, 0.18), transparent 30%),

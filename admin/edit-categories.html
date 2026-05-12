@@ -77,7 +77,7 @@
                         </div>
                     </div>
                     <input type="file" id="editImage" accept="image/*" style="display: none;" />
-                    <small style="color: #666; font-size: 12px;">Optional category image (JPG, PNG, WebP)</small>
+                    <small class="text-muted">Optional category image (JPG, PNG, WebP)</small>
                 </div>
 
                 <div class="modal-actions">
@@ -96,27 +96,32 @@
 
     <!-- Copy Language Modal -->
     <div id="copyLanguageModal" class="modal">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
                 <h2>Copy to Language</h2>
             </div>
             <form id="copyLanguageForm">
-                <p style="color: #666; margin-bottom: 20px;">
-                    This will copy the current category name and description to another language.
+                <p class="text-muted">
+                    Copy the current category name and description to another language.
+                    Languages marked with ✓ already have translations (you can overwrite them).
                 </p>
                 
                 <div class="form-group">
                     <label for="targetLocale">Target Language *</label>
-                    <select id="targetLocale" required>
+                    <select id="targetLocale" required style="font-family: system-ui, -apple-system, sans-serif;">
                         <option value="">Select language...</option>
-                        <option value="en">English</option>
-                        <option value="sv">Swedish</option>
+                        <option value="en">🇬🇧 English</option>
+                        <option value="sv">🇸🇪 Swedish</option>
+                        <option value="de">🇩🇪 German</option>
                     </select>
+                    <small  class="text-muted" style="display: block; margin-top: 8px;">
+                        The dropdown will show which languages already exist for this category
+                    </small>
                 </div>
 
                 <div class="modal-actions">
                     <button type="button" class="button secondary" onclick="closeCopyLanguageModal()">Cancel</button>
-                    <button type="submit" class="button primary">Copy</button>
+                    <button type="submit" class="button primary">Copy Translation</button>
                 </div>
             </form>
         </div>
