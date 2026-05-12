@@ -46,6 +46,7 @@ async function loadTrackData() {
 function populateForm(track) {
     document.getElementById('title').value = track.title || '';
     document.getElementById('description').value = track.description || '';
+    document.getElementById('lyrics').value = track.lyrics || '';
     document.getElementById('language').value = track.language || '';
     document.getElementById('spotify_id').value = track.spotify_id || '';
     document.getElementById('license').checked = track.license || false;
@@ -76,26 +77,35 @@ function populateForm(track) {
 }
 
 async function loadCategories() {
-    // Get categories using model
-    const categories = await categoryModel.getAll();
+    try {
+        // Get the current language from the form
+        const languageSelect = document.getElementById('language');
+        const currentLang = languageSelect.value || 'en';
+        
+        // Use CategoryModel to get all categories with preferred language
+        const categories = await categoryModel.getAllForAdmin(currentLang);
 
-    const select = document.getElementById('categorySelect');
-    
-    // Clear existing options except first two
-    while (select.options.length > 2) {
-        select.remove(2);
-    }
-
-    // Add categories
-    categories.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat.id;
-        option.textContent = cat.name;
-        if (currentTrack.category_id === cat.id) {
-            option.selected = true;
+        const select = document.getElementById('categorySelect');
+        
+        // Clear existing options except first two
+        while (select.options.length > 2) {
+            select.remove(2);
         }
-        select.appendChild(option);
-    });
+
+        // Add categories
+        categories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat.id;
+            option.textContent = cat.name;
+            if (currentTrack.category_id === cat.id) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    } catch (err) {
+        console.error('Error loading categories:', err);
+        alert('Error loading categories: ' + err.message);
+    }
 }
 
 // Show private track section with link and QR code
@@ -148,6 +158,11 @@ function showPrivateTrackSection(token) {
         window.open(privateUrl, '_blank');
     };
 }
+
+// Language selector - reload categories when language changes to update category names
+document.getElementById('language')?.addEventListener('change', async function() {
+    await loadCategories();
+});
 
 // Category handling
 document.getElementById('categorySelect')?.addEventListener('change', function() {
@@ -258,12 +273,18 @@ document.getElementById('trackForm')?.addEventListener('submit', async (e) => {
         const trackData = {
             title: formData.get('title'),
             description: formData.get('description'),
+            lyrics: formData.get('lyrics') || null,
             language: formData.get('language'),
             category_id: categoryId,
             spotify_id: formData.get('spotify_id') || null,
             license: formData.get('license') === 'on',
             is_private: formData.get('is_private') === 'on'
         };
+
+        // If track is being made public (unchecked), clear the private_token
+        if (!trackData.is_private && currentTrack.private_token) {
+            trackData.private_token = null;
+        }
 
         // Handle MP3 file if provided
         const mp3File = formData.get('mp3');

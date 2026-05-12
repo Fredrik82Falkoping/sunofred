@@ -26,7 +26,8 @@ async function getAvailableLanguages() {
     try {
         const { data, error } = await window.supabaseClient
             .from('tracks')
-            .select('language');
+            .select('language')
+            .eq('is_private', false); // Exclude private tracks
 
         if (error) {
             console.error('Error fetching languages:', error);

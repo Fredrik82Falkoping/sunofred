@@ -119,11 +119,12 @@ async function loadCategoryTracks() {
 // Update language filter based on tracks in this category
 async function updateLanguageFilterForCategory() {
     try {
-        // Get all tracks in this category (without language filter)
+        // Get all tracks in this category (without language filter but excluding private tracks)
         const { data: allTracks, error } = await supabaseClient
             .from('tracks')
             .select('language')
-            .eq('category_id', categoryId);
+            .eq('category_id', categoryId)
+            .eq('is_private', false); // Exclude private tracks
 
         if (error) {
             console.error('Error fetching languages for category:', error);

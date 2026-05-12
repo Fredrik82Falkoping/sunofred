@@ -61,6 +61,69 @@ class CategoryModel {
     }
 
     /**
+     * Fetch all categories for admin/editing purposes
+     * Returns all categories with preferred language translation
+     * @param {string} preferredLocale - Preferred language for category names (default: 'en')
+     * @returns {Promise<Array>} Array of all categories with preferred translation
+     */
+    async getAllForAdmin(preferredLocale = 'en') {
+        // Fetch all categories with all translations
+        const { data, error } = await this.supabase
+            .from('categories')
+            .select(`
+                id,
+                image_url,
+                created_at,
+                category_translations(
+                    id,
+                    name,
+                    slug,
+                    body,
+                    locale
+                )
+            `)
+            .order('id');
+
+        if (error) {
+            console.error('Error fetching categories:', error);
+            throw error;
+        }
+
+        console.log('Raw category data:', data);
+        console.log('Preferred locale:', preferredLocale);
+
+        // Process each category to get one entry with preferred translation
+        const categories = (data || [])
+            .filter(cat => cat.category_translations && cat.category_translations.length > 0)
+            .map(cat => {
+                console.log('Processing category:', cat.id, 'translations:', cat.category_translations);
+                
+                // Try to find translation in preferred language, fallback to first available
+                let translation = cat.category_translations.find(t => t.locale === preferredLocale);
+                if (!translation) {
+                    console.log('No translation found for', preferredLocale, 'using fallback');
+                    translation = cat.category_translations[0];
+                }
+
+                return {
+                    id: cat.id,
+                    image_url: cat.image_url,
+                    created_at: cat.created_at,
+                    translation_id: translation.id,
+                    name: translation.name,
+                    slug: translation.slug,
+                    body: translation.body,
+                    locale: translation.locale
+                };
+            })
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        console.log('Processed categories:', categories);
+
+        return categories;
+    }
+
+    /**
      * Get a single category by ID with translation
      * @param {string} id - Category ID
      * @param {string} locale - Optional locale override
