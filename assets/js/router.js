@@ -260,7 +260,7 @@ class Router {
             const container = document.getElementById('tagsContainer');
             
             // Filter out tags with 0 tracks
-            const tagsWithTracks = tags.filter(tag => tag.trackCount > -1);
+            const tagsWithTracks = tags.filter(tag => tag.trackCount > 0);
             
             if (!tagsWithTracks || tagsWithTracks.length === 0) {
                 container.innerHTML = '<p class="no-results">No tags found</p>';

@@ -263,6 +263,8 @@ class TrackModel {
      * @returns {Promise<Array>} Array of tracks
      */
     async getByTag(tagId) {
+        const currentLang = this.getCurrentLanguage();
+        
         // First get all track IDs for this tag
         const { data: trackTags, error: tagError } = await this.supabase
             .from('track_tags')
@@ -280,8 +282,8 @@ class TrackModel {
 
         const trackIds = trackTags.map(tt => tt.track_id);
 
-        // Then get the actual tracks (no language filter for tags)
-        const { data: tracks, error } = await this.supabase
+        // Build query for tracks
+        let query = this.supabase
             .from('tracks')
             .select(`
                 *,
@@ -292,6 +294,13 @@ class TrackModel {
             `)
             .in('id', trackIds)
             .eq('is_private', false);
+        
+        // Only filter by language if not 'all'
+        if (currentLang !== 'all') {
+            query = query.eq('language', currentLang);
+        }
+        
+        const { data: tracks, error } = await query;
 
         if (error) {
             console.error('Error fetching tracks by tag:', error);
