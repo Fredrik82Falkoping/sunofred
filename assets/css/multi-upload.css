@@ -151,3 +151,11 @@
     color: #222;
     font-weight: 500;
 }
+
+/* Lyrics textarea styling */
+.lyrics-textarea {
+    font-family: 'Courier New', monospace;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    resize: vertical;
+}

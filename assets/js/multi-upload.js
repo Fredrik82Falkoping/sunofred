@@ -45,6 +45,11 @@ function addTrackItem() {
         </div>
 
         <div class="form-group">
+            <label for="lyrics_${trackCounter}">Lyrics</label>
+            <textarea name="lyrics_${trackCounter}" id="lyrics_${trackCounter}" class="lyrics-textarea" placeholder="Enter song lyrics (optional)" rows="6"></textarea>
+        </div>
+
+        <div class="form-group">
             <label for="spotify_id_${trackCounter}">Spotify ID (optional)</label>
             <input type="text" name="spotify_id_${trackCounter}" id="spotify_id_${trackCounter}" />
         </div>
@@ -148,6 +153,7 @@ document.getElementById('multiTrackForm')?.addEventListener('submit', async (e) 
         
         const title = document.getElementById(`title_${trackId}`).value;
         const description = document.getElementById(`description_${trackId}`).value;
+        const lyrics = document.getElementById(`lyrics_${trackId}`).value;
         const spotify_id = document.getElementById(`spotify_id_${trackId}`).value;
         const mp3File = document.getElementById(`mp3_${trackId}`).files[0];
         
@@ -159,6 +165,7 @@ document.getElementById('multiTrackForm')?.addEventListener('submit', async (e) 
         tracks.push({
             title,
             description,
+            lyrics: lyrics || null,
             spotify_id: spotify_id || null,
             mp3File,
             language,
@@ -223,6 +230,7 @@ document.getElementById('multiTrackForm')?.addEventListener('submit', async (e) 
             const trackData = {
                 title: track.title,
                 description: track.description,
+                lyrics: track.lyrics,
                 language: track.language,
                 category_id: track.category_id,
                 spotify_id: track.spotify_id,

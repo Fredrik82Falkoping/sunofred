@@ -120,16 +120,8 @@ class TrackModel {
      * @returns {Promise<string>} New private token
      */
     async generatePrivateToken(trackId) {
-        // Generate a new UUID
-        const { data, error } = await this.supabase
-            .rpc('gen_random_uuid');
-
-        if (error) {
-            console.error('Error generating token:', error);
-            throw error;
-        }
-
-        const newToken = data;
+        // Generate a new UUID using browser's crypto API
+        const newToken = crypto.randomUUID();
 
         // Update track with new token
         await this.update(trackId, { 
@@ -216,6 +208,7 @@ class TrackModel {
                 category_id: trackData.category_id,
                 spotify_id: trackData.spotify_id || null,
                 mp3_url: trackData.mp3_url,
+                lyrics: trackData.lyrics || null,
                 license: trackData.license || false,
                 is_private: trackData.is_private || false,
                 private_token: trackData.is_private ? trackData.private_token || null : null

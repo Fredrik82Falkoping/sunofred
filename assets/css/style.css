@@ -479,6 +479,14 @@ audio {
     min-height: 120px;
 }
 
+/* Lyrics textarea special styling */
+.form-group .lyrics-textarea {
+    font-family: 'Courier New', Courier, monospace;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    min-height: 200px;
+}
+
 .form-group input[type="file"] {
     width: 100%;
     padding: 0.95rem 1.25rem;
